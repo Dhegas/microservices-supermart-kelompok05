@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
-import { authGuard, roleGuard } from './core/guards/auth.guard';
+import { authGuard, roleGuard, customerGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -19,34 +19,35 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)
       },
 
-      // Customer routes
+      // Customer routes (Khusus Pelanggan)
       {
         path: 'catalog',
         loadComponent: () => import('./features/customer/catalog/catalog.component').then(m => m.CatalogComponent)
       },
       {
         path: 'cart',
-        loadComponent: () => import('./features/customer/cart/cart.component').then(m => m.CartComponent)
+        loadComponent: () => import('./features/customer/cart/cart.component').then(m => m.CartComponent),
+        canActivate: [customerGuard]
       },
       {
         path: 'checkout',
         loadComponent: () => import('./features/customer/checkout/checkout.component').then(m => m.CheckoutComponent),
-        canActivate: [authGuard]
+        canActivate: [authGuard, customerGuard]
       },
       {
         path: 'orders',
         loadComponent: () => import('./features/customer/orders/orders.component').then(m => m.OrdersComponent),
-        canActivate: [authGuard]
+        canActivate: [authGuard, customerGuard]
       },
       {
         path: 'wallet',
         loadComponent: () => import('./features/customer/wallet/wallet.component').then(m => m.WalletComponent),
-        canActivate: [authGuard]
+        canActivate: [authGuard, customerGuard]
       },
       {
         path: 'support',
         loadComponent: () => import('./features/customer/support/support.component').then(m => m.SupportComponent),
-        canActivate: [authGuard]
+        canActivate: [authGuard, customerGuard]
       },
 
       // Warehouse Staff routes

@@ -37,6 +37,20 @@ interface APIResponse<T> {
           <p>Masuk untuk melihat isi keranjang belanja atau melanjutkan ke proses checkout.</p>
           <a routerLink="/auth/login" class="btn btn-primary mt-4" id="btn-login-cart">Masuk / Login Sekarang</a>
         </div>
+      } @else if (auth.userRole() !== 'CUSTOMER') {
+        <div class="empty-cart card">
+          <span class="empty-icon">🚫</span>
+          <h3>Akses Belanja Khusus Pelanggan</h3>
+          <p>Akun Anda saat ini masuk sebagai <strong>{{ auth.userRole() }}</strong>. Fitur belanja hanya tersedia untuk akun Pelanggan (Customer).</p>
+          <div class="mt-4 flex gap-3 justify-center" style="display: flex; gap: 0.75rem; justify-content: center;">
+            <button (click)="auth.redirectBasedOnRole(auth.userRole())" class="btn btn-primary">
+              Kembali ke Dashboard
+            </button>
+            <button (click)="auth.logout()" class="btn btn-outline">
+              Ganti Akun
+            </button>
+          </div>
+        </div>
       } @else if (cartService.loading()) {
         <div class="empty-cart card">
           <span class="empty-icon">⏳</span>
@@ -352,7 +366,7 @@ export class CartComponent implements OnInit {
   appliedDiscount = signal(0);
 
   ngOnInit() {
-    if (this.auth.isLoggedIn()) {
+    if (this.auth.isLoggedIn() && this.auth.userRole() === 'CUSTOMER') {
       this.cartService.loadCart().subscribe();
     }
   }

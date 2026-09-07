@@ -11,13 +11,14 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 
 	authRequired := middleware.AuthRequired(cfg)
 	staffOrAdmin := middleware.RolesRequired("SUPER_ADMIN", "WAREHOUSE_STAFF")
+	customerOnly := middleware.StrictRolesRequired("CUSTOMER")
 
-	// Cart routes
-	orderGroup.Get("/cart", handler.GetCart, authRequired)
-	orderGroup.Post("/cart", handler.AddToCart, authRequired)
-	orderGroup.Put("/cart/:id", handler.UpdateCartItem, authRequired)
-	orderGroup.Delete("/cart/:id", handler.RemoveCartItem, authRequired)
-	orderGroup.Post("/checkout", handler.Checkout, authRequired)
+	// Cart routes (Khusus Pelanggan)
+	orderGroup.Get("/cart", handler.GetCart, authRequired, customerOnly)
+	orderGroup.Post("/cart", handler.AddToCart, authRequired, customerOnly)
+	orderGroup.Put("/cart/:id", handler.UpdateCartItem, authRequired, customerOnly)
+	orderGroup.Delete("/cart/:id", handler.RemoveCartItem, authRequired, customerOnly)
+	orderGroup.Post("/checkout", handler.Checkout, authRequired, customerOnly)
 
 	// Order routes
 	orderGroup.Get("/statuses", handler.GetStatuses, authRequired)

@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Product, Category, Brand } from '../../../core/models/types';
 import { CartService } from '../../../core/services/cart.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 interface APIResponse<T> {
   success: boolean;
@@ -39,6 +40,21 @@ interface APIResponse<T> {
           </div>
         </div>
       </div>
+
+      <!-- Informative Notice for Staff/Admin in Catalog -->
+      @if (auth.isLoggedIn() && auth.userRole() !== 'CUSTOMER') {
+        <div class="card mb-6" style="background: rgba(14, 165, 233, 0.08); border-left: 4px solid var(--color-primary);">
+          <div class="flex items-center gap-3">
+            <span style="font-size: 1.5rem;">ℹ️</span>
+            <div>
+              <strong style="color: var(--color-primary-dark);">Mode Tinjau Katalog (Peran: {{ auth.userRole() }})</strong>
+              <p class="text-sm text-secondary mb-0">
+                Fitur keranjang belanja dan pemesanan dinonaktifkan untuk staf/admin. Hanya akun Pelanggan yang dapat berbelanja.
+              </p>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- Filter and Search Toolbar -->
       <div class="toolbar card">
@@ -137,14 +153,16 @@ interface APIResponse<T> {
 
                 <div class="card-footer">
                   <span class="weight-info">⚖️ {{ product.weight_gram }}g</span>
-                  <button
-                    (click)="addToCart(product)"
-                    class="btn btn-primary btn-sm add-cart-btn"
-                    [id]="'btn-add-cart-' + product.id"
-                    [disabled]="addingToCart() === product.id"
-                  >
-                    <span>{{ addingToCart() === product.id ? 'Menambahkan...' : '+ Keranjang' }}</span>
-                  </button>
+                  @if (!auth.isLoggedIn() || auth.userRole() === 'CUSTOMER') {
+                    <button
+                      (click)="addToCart(product)"
+                      class="btn btn-primary btn-sm add-cart-btn"
+                      [id]="'btn-add-cart-' + product.id"
+                      [disabled]="addingToCart() === product.id"
+                    >
+                      <span>{{ addingToCart() === product.id ? 'Menambahkan...' : '+ Keranjang' }}</span>
+                    </button>
+                  }
                 </div>
 
               </div>
@@ -438,6 +456,7 @@ interface APIResponse<T> {
 export class CatalogComponent implements OnInit {
   private http = inject(HttpClient);
   private cartService = inject(CartService);
+  auth = inject(AuthService);
 
   products = signal<Product[]>([]);
   categories = signal<Category[]>([]);
@@ -489,6 +508,9 @@ export class CatalogComponent implements OnInit {
   }
 
   addToCart(product: Product) {
+    if (this.auth.isLoggedIn() && this.auth.userRole() !== 'CUSTOMER') {
+      return;
+    }
     this.addingToCart.set(product.id);
     this.cartService.addToCart(product.id, 1).subscribe({
       next: () => {

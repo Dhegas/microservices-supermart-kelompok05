@@ -27,13 +27,16 @@ import { NotificationService } from '../../core/services/notification.service';
 
           <!-- Role-Aware Navigation Links -->
           <nav class="nav-links">
-            <a routerLink="/catalog" routerLinkActive="active" class="nav-item">
-              <span>🛍️ Belanja</span>
-            </a>
+            <!-- Belanja (Hanya untuk Tamu / Pelanggan) -->
+            @if (!auth.isLoggedIn() || auth.userRole() === 'CUSTOMER') {
+              <a routerLink="/catalog" routerLinkActive="active" class="nav-item">
+                <span>🛍️ Belanja</span>
+              </a>
+            }
 
             @if (auth.isLoggedIn()) {
-              <!-- Customer Links -->
-              @if (auth.userRole() === 'CUSTOMER' || auth.userRole() === 'SUPER_ADMIN') {
+              <!-- Customer Links (Khusus Pelanggan) -->
+              @if (auth.userRole() === 'CUSTOMER') {
                 <a routerLink="/orders" routerLinkActive="active" class="nav-item">
                   <span>📦 Pesanan Saya</span>
                 </a>
@@ -96,13 +99,15 @@ import { NotificationService } from '../../core/services/notification.service';
 
           <!-- Right Navigation: Cart, User Badge, Auth Action -->
           <div class="nav-actions">
-            <!-- Cart Button -->
-            <a routerLink="/cart" class="cart-btn" id="nav-cart-btn" title="Keranjang Belanja">
-              <span class="cart-icon">🛒</span>
-              @if (cart.itemCount() > 0) {
-                <span class="cart-counter">{{ cart.itemCount() }}</span>
-              }
-            </a>
+            <!-- Cart Button (Hanya Tamu atau Pelanggan) -->
+            @if (!auth.isLoggedIn() || auth.userRole() === 'CUSTOMER') {
+              <a routerLink="/cart" class="cart-btn" id="nav-cart-btn" title="Keranjang Belanja">
+                <span class="cart-icon">🛒</span>
+                @if (cart.itemCount() > 0) {
+                  <span class="cart-counter">{{ cart.itemCount() }}</span>
+                }
+              </a>
+            }
 
             @if (auth.isLoggedIn()) {
               <div class="user-pill">
@@ -369,7 +374,7 @@ export class MainLayoutComponent implements OnInit {
   notify = inject(NotificationService);
 
   ngOnInit() {
-    if (this.auth.isLoggedIn()) {
+    if (this.auth.isLoggedIn() && this.auth.userRole() === 'CUSTOMER') {
       this.cart.loadCart().subscribe();
     }
   }

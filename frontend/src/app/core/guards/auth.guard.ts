@@ -14,6 +14,19 @@ export const authGuard: CanActivateFn = () => {
   return false;
 };
 
+export const customerGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+
+  // Jika user sudah login tapi bukan CUSTOMER (misal: staf gudang, admin, kurir, cs),
+  // arahkan ke workspace/dashboard mereka masing-masing
+  if (authService.isLoggedIn() && authService.userRole() !== 'CUSTOMER') {
+    authService.redirectBasedOnRole(authService.userRole());
+    return false;
+  }
+
+  return true;
+};
+
 export const roleGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
@@ -30,6 +43,6 @@ export const roleGuard: CanActivateFn = (route) => {
     return true;
   }
 
-  router.navigate(['/catalog']);
+  authService.redirectBasedOnRole(userRole);
   return false;
 };

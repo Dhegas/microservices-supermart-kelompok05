@@ -33,13 +33,13 @@ export class CartService {
   });
 
   constructor() {
-    if (this.auth.isLoggedIn()) {
+    if (this.auth.isLoggedIn() && this.auth.userRole() === 'CUSTOMER') {
       this.loadCart().subscribe();
     }
   }
 
   loadCart(): Observable<APIResponse<Cart | null>> {
-    if (!this.auth.isLoggedIn()) {
+    if (!this.auth.isLoggedIn() || this.auth.userRole() !== 'CUSTOMER') {
       this.cart.set(null);
       return of({ success: true, data: null });
     }
@@ -67,6 +67,11 @@ export class CartService {
       this.notify.warning('Silakan masuk (login) terlebih dahulu untuk menambahkan barang ke keranjang.');
       this.router.navigate(['/auth/login']);
       return throwError(() => new Error('Unauthenticated'));
+    }
+
+    if (this.auth.userRole() !== 'CUSTOMER') {
+      this.notify.warning('Hanya akun Pelanggan yang dapat berbelanja dan menambah produk ke keranjang.');
+      return throwError(() => new Error('Forbidden'));
     }
 
     return this.http.post<APIResponse<null>>('/api/v1/orders/cart', { product_id: productId, quantity }).pipe(

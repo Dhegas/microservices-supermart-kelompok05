@@ -3,6 +3,7 @@ package order
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -191,6 +192,48 @@ func (r *mysqlRepository) CreateOrder(o *Order, items []OrderItem, shipping *Ord
 	if err != nil {
 		return fmt.Errorf("insert payment invoice: %w", err)
 	}
+
+	// Generate shipping order for logistics domain (monolithic cross-domain coupling)
+	courierServiceID := "cs000001-0000-0000-0000-000000000002" // default GoSend
+	trackingNumber := fmt.Sprintf("GOSEND-%s-%04d", now.Format("20060102"), time.Now().Unix()%10000)
+
+	if shipping != nil {
+		cName := strings.ToLower(shipping.CourierName)
+		if strings.Contains(cName, "jne") {
+			courierServiceID = "cs000001-0000-0000-0000-000000000001"
+			trackingNumber = fmt.Sprintf("JNE-%s-%04d", now.Format("20060102"), time.Now().Unix()%10000)
+		} else if strings.Contains(cName, "internal") || strings.Contains(cName, "express") || strings.Contains(cName, "nusantara") {
+			courierServiceID = "cs000001-0000-0000-0000-000000000003"
+			trackingNumber = fmt.Sprintf("EXP-%s-%04d", now.Format("20060102"), time.Now().Unix()%10000)
+		}
+
+		shipping.TrackingNumber = &trackingNumber
+		_, _ = tx.Exec(`UPDATE order_shipping_details SET tracking_number = ? WHERE id = ?`, trackingNumber, shipping.ID)
+	}
+
+	soID := uuid.NewString()
+	var totalWeightKg float64 = 0.0
+	for _, it := range items {
+		totalWeightKg += float64(it.Quantity) * 0.5
+	}
+	if totalWeightKg <= 0 {
+		totalWeightKg = 1.0
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO shipping_orders (id, order_id, courier_service_id, tracking_number, weight_kg, current_status)
+		VALUES (?, ?, ?, ?, ?, 'READY_FOR_PICKUP')
+	`, soID, o.ID, courierServiceID, trackingNumber, totalWeightKg)
+	if err != nil {
+		return fmt.Errorf("insert shipping order: %w", err)
+	}
+
+	// Insert initial tracking log
+	logID := uuid.NewString()
+	_, _ = tx.Exec(`
+		INSERT INTO shipping_tracking_logs (id, shipping_order_id, status_description, location)
+		VALUES (?, ?, 'Pesanan telah diproses dan siap dijemput oleh armada kurir', 'Hub Gudang Pengiriman')
+	`, logID, soID)
 
 	return tx.Commit()
 }

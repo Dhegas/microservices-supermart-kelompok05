@@ -137,6 +137,15 @@ import { NotificationService } from '../../../core/services/notification.service
                         @case ('PICKED_UP') {
                           <span class="badge badge-info">📦 SUDAH DIJEMPUT</span>
                         }
+                        @case ('READY_FOR_PICKUP') {
+                          <span class="badge badge-warning">📦 SIAP DIJEMPUT</span>
+                        }
+                        @case ('READY') {
+                          <span class="badge badge-warning">📦 SIAP KIRIM</span>
+                        }
+                        @case ('MANIFESTED') {
+                          <span class="badge badge-secondary">📋 MANIFESTED</span>
+                        }
                         @default {
                           <span class="badge badge-secondary">{{ s.current_status }}</span>
                         }
@@ -144,7 +153,7 @@ import { NotificationService } from '../../../core/services/notification.service
                     </td>
                     <td class="text-right">
                       <div class="action-buttons">
-                        @if (s.current_status === 'PENDING' || s.current_status === 'READY_FOR_PICKUP') {
+                        @if (s.current_status === 'PENDING' || s.current_status === 'READY_FOR_PICKUP' || s.current_status === 'READY' || s.current_status === 'MANIFESTED') {
                           <button (click)="updateStatus(s.id, 'PICKED_UP')" class="btn btn-outline btn-sm">
                             Jemput Paket
                           </button>
@@ -410,6 +419,14 @@ export class DeliveriesComponent implements OnInit {
 
   filteredShipments(): ShippingOrder[] {
     if (this.statusFilter === 'ALL') return this.shipments();
+    if (this.statusFilter === 'READY') {
+      return this.shipments().filter(s =>
+        s.current_status === 'READY' ||
+        s.current_status === 'READY_FOR_PICKUP' ||
+        s.current_status === 'MANIFESTED' ||
+        s.current_status === 'PENDING'
+      );
+    }
     return this.shipments().filter(s => s.current_status === this.statusFilter);
   }
 

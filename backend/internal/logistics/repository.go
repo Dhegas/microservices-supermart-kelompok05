@@ -68,6 +68,25 @@ func (r *mysqlRepository) GetRates() ([]ShippingRate, error) {
 }
 
 func (r *mysqlRepository) GetShippingOrders(status string) ([]ShippingOrder, error) {
+	// Monolith seam: Auto-sync any existing orders that do not have a shipping_order yet
+	syncQuery := `
+		INSERT IGNORE INTO shipping_orders (id, order_id, courier_service_id, tracking_number, weight_kg, current_status)
+		SELECT 
+			UUID(),
+			o.id,
+			COALESCE(
+				(SELECT cs.id FROM courier_services cs JOIN order_shipping_details osd ON osd.order_id = o.id WHERE osd.courier_name LIKE CONCAT('%', cs.service_name, '%') LIMIT 1),
+				'cs000001-0000-0000-0000-000000000002'
+			),
+			CONCAT('GOSEND-', DATE_FORMAT(o.created_at, '%Y%m%d'), '-', SUBSTRING(o.id, 1, 4)),
+			1.50,
+			'READY_FOR_PICKUP'
+		FROM orders o
+		LEFT JOIN shipping_orders so ON o.id = so.order_id
+		WHERE so.id IS NULL
+	`
+	_, _ = r.db.Exec(syncQuery)
+
 	query := `
 		SELECT so.id, so.order_id, so.courier_service_id, so.tracking_number, so.weight_kg, so.current_status,
 		       o.order_number, cs.service_name, u.full_name AS customer_name,
@@ -83,7 +102,7 @@ func (r *mysqlRepository) GetShippingOrders(status string) ([]ShippingOrder, err
 		query += " WHERE so.current_status = ?"
 		args = append(args, status)
 	}
-	query += " ORDER BY so.id DESC"
+	query += " ORDER BY o.created_at DESC"
 
 	var orders []ShippingOrder
 	err := r.db.Select(&orders, query, args...)

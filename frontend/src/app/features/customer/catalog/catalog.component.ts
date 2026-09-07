@@ -141,10 +141,12 @@ interface APIResponse<T> {
                     (click)="addToCart(product)"
                     class="btn btn-primary btn-sm add-cart-btn"
                     [id]="'btn-add-cart-' + product.id"
+                    [disabled]="addingToCart() === product.id"
                   >
-                    <span>+ Keranjang</span>
+                    <span>{{ addingToCart() === product.id ? 'Menambahkan...' : '+ Keranjang' }}</span>
                   </button>
                 </div>
+
               </div>
             </div>
           }
@@ -440,6 +442,7 @@ export class CatalogComponent implements OnInit {
   products = signal<Product[]>([]);
   categories = signal<Category[]>([]);
   loading = signal(true);
+  addingToCart = signal<string | null>(null);
 
   searchQuery = '';
   selectedCategory = '';
@@ -486,6 +489,15 @@ export class CatalogComponent implements OnInit {
   }
 
   addToCart(product: Product) {
-    this.cartService.addToCart(product.id, 1).subscribe();
+    this.addingToCart.set(product.id);
+    this.cartService.addToCart(product.id, 1).subscribe({
+      next: () => {
+        this.addingToCart.set(null);
+      },
+      error: () => {
+        this.addingToCart.set(null);
+      }
+    });
   }
 }
+

@@ -12,17 +12,17 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 	authRequired := middleware.AuthRequired(cfg)
 	staffOrAdmin := middleware.RolesRequired("SUPER_ADMIN", "WAREHOUSE_STAFF")
 
-	inventoryGroup.Get("/warehouses", authRequired, handler.GetWarehouses)
-	inventoryGroup.Get("/warehouses/:id/zones", authRequired, handler.GetWarehouseZones)
+	inventoryGroup.Get("/warehouses", handler.GetWarehouses, authRequired)
+	inventoryGroup.Get("/warehouses/:id/zones", handler.GetWarehouseZones, authRequired)
 
-	inventoryGroup.Get("/stocks", authRequired, staffOrAdmin, handler.GetStocks)
-	inventoryGroup.Put("/stocks/:id/adjust", authRequired, staffOrAdmin, handler.AdjustStock)
-	inventoryGroup.Post("/mutations", authRequired, staffOrAdmin, handler.CreateMutation)
-	inventoryGroup.Get("/mutations", authRequired, staffOrAdmin, handler.GetMutations)
-	inventoryGroup.Get("/alerts", authRequired, staffOrAdmin, handler.GetLowStockAlerts)
-	inventoryGroup.Get("/opnames", authRequired, staffOrAdmin, handler.GetOpnames)
-	inventoryGroup.Post("/opnames", authRequired, staffOrAdmin, handler.CreateOpname)
+	inventoryGroup.Get("/stocks", handler.GetStocks, authRequired, staffOrAdmin)
+	inventoryGroup.Put("/stocks/:id/adjust", handler.AdjustStock, authRequired, staffOrAdmin)
+	inventoryGroup.Post("/mutations", handler.CreateMutation, authRequired, staffOrAdmin)
+	inventoryGroup.Get("/mutations", handler.GetMutations, authRequired, staffOrAdmin)
+	inventoryGroup.Get("/alerts", handler.GetLowStockAlerts, authRequired, staffOrAdmin)
+	inventoryGroup.Get("/opnames", handler.GetOpnames, authRequired, staffOrAdmin)
+	inventoryGroup.Post("/opnames", handler.CreateOpname, authRequired, staffOrAdmin)
 
 	adminOnly := middleware.RolesRequired("SUPER_ADMIN")
-	inventoryGroup.Post("/warehouses", authRequired, adminOnly, handler.CreateWarehouse)
+	inventoryGroup.Post("/warehouses", handler.CreateWarehouse, authRequired, adminOnly)
 }

@@ -15,18 +15,18 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 
 	// Authenticated routes
 	authRequired := middleware.AuthRequired(cfg)
-	authGroup.Get("/me", authRequired, handler.GetMe)
-	authGroup.Put("/me", authRequired, handler.UpdateProfile)
-	authGroup.Get("/addresses", authRequired, handler.GetAddresses)
-	authGroup.Post("/addresses", authRequired, handler.AddAddress)
-	authGroup.Delete("/addresses/:id", authRequired, handler.DeleteAddress)
-	authGroup.Get("/kyc", authRequired, handler.GetKYC)
-	authGroup.Post("/kyc", authRequired, handler.SubmitKYC)
+	authGroup.Get("/me", handler.GetMe, authRequired)
+	authGroup.Put("/me", handler.UpdateProfile, authRequired)
+	authGroup.Get("/addresses", handler.GetAddresses, authRequired)
+	authGroup.Post("/addresses", handler.AddAddress, authRequired)
+	authGroup.Delete("/addresses/:id", handler.DeleteAddress, authRequired)
+	authGroup.Get("/kyc", handler.GetKYC, authRequired)
+	authGroup.Post("/kyc", handler.SubmitKYC, authRequired)
 
 	// Admin routes
 	adminOnly := middleware.RolesRequired("SUPER_ADMIN")
-	authGroup.Get("/users", authRequired, adminOnly, handler.GetAllUsers)
-	authGroup.Get("/roles", authRequired, adminOnly, handler.GetRoles)
-	authGroup.Get("/permissions", authRequired, adminOnly, handler.GetPermissions)
-	authGroup.Put("/kyc/:id/verify", authRequired, adminOnly, handler.VerifyKYC)
+	authGroup.Get("/users", handler.GetAllUsers, authRequired, adminOnly)
+	authGroup.Get("/roles", handler.GetRoles, authRequired, adminOnly)
+	authGroup.Get("/permissions", handler.GetPermissions, authRequired, adminOnly)
+	authGroup.Put("/kyc/:id/verify", handler.VerifyKYC, authRequired, adminOnly)
 }

@@ -40,8 +40,9 @@ func NewRepository(db *sqlx.DB) Repository {
 
 func (r *mysqlRepository) GetOrCreateCart(customerID string) (*Cart, error) {
 	var c Cart
-	err := r.db.Get(&c, "SELECT * FROM carts WHERE customer_id = ? LIMIT 1", customerID)
+	err := r.db.Get(&c, "SELECT id, user_id, created_at FROM carts WHERE user_id = ? LIMIT 1", customerID)
 	if err == nil {
+		c.CustomerID = c.UserID
 		return &c, nil
 	}
 	if err != sql.ErrNoRows {
@@ -50,12 +51,12 @@ func (r *mysqlRepository) GetOrCreateCart(customerID string) (*Cart, error) {
 
 	newCart := &Cart{
 		ID:         uuid.NewString(),
+		UserID:     customerID,
 		CustomerID: customerID,
 		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
 	}
-	_, err = r.db.Exec("INSERT INTO carts (id, customer_id, created_at, updated_at) VALUES (?, ?, ?, ?)",
-		newCart.ID, newCart.CustomerID, newCart.CreatedAt, newCart.UpdatedAt)
+	_, err = r.db.Exec("INSERT INTO carts (id, user_id, created_at) VALUES (?, ?, ?)",
+		newCart.ID, newCart.UserID, newCart.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -129,15 +130,14 @@ func (r *mysqlRepository) CreateOrder(o *Order, items []OrderItem, shipping *Ord
 	}
 	now := time.Now()
 	o.CreatedAt = now
-	o.UpdatedAt = now
 
 	insertOrder := `
 		INSERT INTO orders (id, order_number, customer_id, shipping_address_id, order_status_id, warehouse_id,
-		                    total_gross_amount, discount_amount, tax_amount, shipping_fee, total_net_amount, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		                    total_gross_amount, discount_amount, tax_amount, shipping_fee, total_net_amount, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err = tx.Exec(insertOrder, o.ID, o.OrderNumber, o.CustomerID, o.ShippingAddressID, o.OrderStatusID, o.WarehouseID,
-		o.TotalGrossAmount, o.DiscountAmount, o.TaxAmount, o.ShippingFee, o.TotalNetAmount, o.CreatedAt, o.UpdatedAt)
+		o.TotalGrossAmount, o.DiscountAmount, o.TaxAmount, o.ShippingFee, o.TotalNetAmount, o.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("insert order: %w", err)
 	}
@@ -173,7 +173,7 @@ func (r *mysqlRepository) CreateOrder(o *Order, items []OrderItem, shipping *Ord
 	// Status history
 	histID := uuid.NewString()
 	_, err = tx.Exec(`
-		INSERT INTO order_status_histories (id, order_id, order_status_id, notes, created_at)
+		INSERT INTO order_status_histories (id, order_id, order_status_id, notes, changed_at)
 		VALUES (?, ?, ?, 'Pesanan baru dibuat', NOW())
 	`, histID, o.ID, o.OrderStatusID)
 	if err != nil {
@@ -186,7 +186,7 @@ func (r *mysqlRepository) CreateOrder(o *Order, items []OrderItem, shipping *Ord
 func (r *mysqlRepository) GetOrders(customerID, statusID string) ([]Order, error) {
 	query := `
 		SELECT o.id, o.order_number, o.customer_id, o.shipping_address_id, o.order_status_id, o.warehouse_id,
-		       o.total_gross_amount, o.discount_amount, o.tax_amount, o.shipping_fee, o.total_net_amount, o.created_at, o.updated_at,
+		       o.total_gross_amount, o.discount_amount, o.tax_amount, o.shipping_fee, o.total_net_amount, o.created_at,
 		       os.status_code, os.status_name,
 		       u.full_name AS customer_name, u.email AS customer_email,
 		       w.warehouse_name,
@@ -222,7 +222,7 @@ func (r *mysqlRepository) GetOrders(customerID, statusID string) ([]Order, error
 func (r *mysqlRepository) GetOrderByID(id string) (*Order, error) {
 	query := `
 		SELECT o.id, o.order_number, o.customer_id, o.shipping_address_id, o.order_status_id, o.warehouse_id,
-		       o.total_gross_amount, o.discount_amount, o.tax_amount, o.shipping_fee, o.total_net_amount, o.created_at, o.updated_at,
+		       o.total_gross_amount, o.discount_amount, o.tax_amount, o.shipping_fee, o.total_net_amount, o.created_at,
 		       os.status_code, os.status_name,
 		       u.full_name AS customer_name, u.email AS customer_email,
 		       w.warehouse_name,
@@ -266,12 +266,12 @@ func (r *mysqlRepository) GetOrderShippingDetail(orderID string) (*OrderShipping
 
 func (r *mysqlRepository) GetOrderStatusHistories(orderID string) ([]OrderStatusHistory, error) {
 	query := `
-		SELECT osh.id, osh.order_id, osh.order_status_id, osh.notes, osh.created_at,
+		SELECT osh.id, osh.order_id, osh.order_status_id, osh.notes, osh.changed_at,
 		       os.status_name
 		FROM order_status_histories osh
 		JOIN order_statuses os ON osh.order_status_id = os.id
 		WHERE osh.order_id = ?
-		ORDER BY osh.created_at ASC
+		ORDER BY osh.changed_at ASC
 	`
 	var histories []OrderStatusHistory
 	err := r.db.Select(&histories, query, orderID)
@@ -308,14 +308,14 @@ func (r *mysqlRepository) UpdateOrderStatus(orderID, statusID, notes string) err
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("UPDATE orders SET order_status_id = ?, updated_at = NOW() WHERE id = ?", statusID, orderID)
+	_, err = tx.Exec("UPDATE orders SET order_status_id = ? WHERE id = ?", statusID, orderID)
 	if err != nil {
 		return err
 	}
 
 	histID := uuid.NewString()
 	_, err = tx.Exec(`
-		INSERT INTO order_status_histories (id, order_id, order_status_id, notes, created_at)
+		INSERT INTO order_status_histories (id, order_id, order_status_id, notes, changed_at)
 		VALUES (?, ?, ?, ?, NOW())
 	`, histID, orderID, statusID, notes)
 	if err != nil {
@@ -332,14 +332,14 @@ func (r *mysqlRepository) CancelOrder(orderID, reason, userID, cancelledStatusID
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec("UPDATE orders SET order_status_id = ?, updated_at = NOW() WHERE id = ?", cancelledStatusID, orderID)
+	_, err = tx.Exec("UPDATE orders SET order_status_id = ? WHERE id = ?", cancelledStatusID, orderID)
 	if err != nil {
 		return err
 	}
 
 	cnlID := uuid.NewString()
 	_, err = tx.Exec(`
-		INSERT INTO order_cancellations (id, order_id, reason, cancelled_by_user_id, cancelled_at)
+		INSERT INTO order_cancellations (id, order_id, cancel_reason, cancelled_by_user_id, cancelled_at)
 		VALUES (?, ?, ?, ?, NOW())
 	`, cnlID, orderID, reason, userID)
 	if err != nil {
@@ -348,7 +348,7 @@ func (r *mysqlRepository) CancelOrder(orderID, reason, userID, cancelledStatusID
 
 	histID := uuid.NewString()
 	_, err = tx.Exec(`
-		INSERT INTO order_status_histories (id, order_id, order_status_id, notes, created_at)
+		INSERT INTO order_status_histories (id, order_id, order_status_id, notes, changed_at)
 		VALUES (?, ?, ?, ?, NOW())
 	`, histID, orderID, cancelledStatusID, "Dibatalkan: "+reason)
 	if err != nil {

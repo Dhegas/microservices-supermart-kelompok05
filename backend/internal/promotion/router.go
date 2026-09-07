@@ -16,12 +16,12 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 
 	// Authenticated
 	authRequired := middleware.AuthRequired(cfg)
-	promoGroup.Post("/vouchers/validate", authRequired, handler.ValidateVoucher)
-	promoGroup.Get("/loyalty", authRequired, handler.GetLoyalty)
-	promoGroup.Post("/loyalty/redeem", authRequired, handler.RedeemPoints)
+	promoGroup.Post("/vouchers/validate", handler.ValidateVoucher, authRequired)
+	promoGroup.Get("/loyalty", handler.GetLoyalty, authRequired)
+	promoGroup.Post("/loyalty/redeem", handler.RedeemPoints, authRequired)
 
 	// Admin
 	adminOnly := middleware.RolesRequired("SUPER_ADMIN")
-	promoGroup.Post("/", authRequired, adminOnly, handler.CreatePromotion)
-	promoGroup.Post("/vouchers", authRequired, adminOnly, handler.CreateVoucher)
+	promoGroup.Post("/", handler.CreatePromotion, authRequired, adminOnly)
+	promoGroup.Post("/vouchers", handler.CreateVoucher, authRequired, adminOnly)
 }

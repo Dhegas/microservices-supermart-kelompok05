@@ -6,9 +6,9 @@ import (
 
 type Cart struct {
 	ID         string     `db:"id" json:"id"`
-	CustomerID string     `db:"customer_id" json:"customer_id"`
+	UserID     string     `db:"user_id" json:"user_id"`
+	CustomerID string     `db:"-" json:"customer_id"`
 	CreatedAt  time.Time  `db:"created_at" json:"created_at"`
-	UpdatedAt  time.Time  `db:"updated_at" json:"updated_at"`
 	Items      []CartItem `json:"items,omitempty"`
 }
 
@@ -43,7 +43,7 @@ type Order struct {
 	ShippingFee       float64   `db:"shipping_fee" json:"shipping_fee"`
 	TotalNetAmount    float64   `db:"total_net_amount" json:"total_net_amount"`
 	CreatedAt         time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt         time.Time `db:"updated_at" json:"updated_at"`
+	UpdatedAt         time.Time `db:"-" json:"updated_at,omitempty"`
 
 	// Joined fields
 	StatusCode      string `db:"status_code" json:"status_code,omitempty"`
@@ -70,7 +70,8 @@ type OrderStatusHistory struct {
 	OrderID       string    `db:"order_id" json:"order_id"`
 	OrderStatusID string    `db:"order_status_id" json:"order_status_id"`
 	Notes         *string   `db:"notes" json:"notes"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
+	ChangedAt     time.Time `db:"changed_at" json:"changed_at"`
+	CreatedAt     time.Time `db:"-" json:"created_at,omitempty"`
 	StatusName    string    `db:"status_name" json:"status_name,omitempty"`
 }
 
@@ -92,9 +93,10 @@ type OrderNote struct {
 }
 
 type OrderCancellation struct {
-	ID                 string    `db:"id" json:"id"`
-	OrderID            string    `db:"order_id" json:"order_id"`
-	Reason             string    `db:"reason" json:"reason"`
-	CancelledByUserID  string    `db:"cancelled_by_user_id" json:"cancelled_by_user_id"`
-	CancelledAt        time.Time `db:"cancelled_at" json:"cancelled_at"`
+	ID                string    `db:"id" json:"id"`
+	OrderID           string    `db:"order_id" json:"order_id"`
+	CancelReason      string    `db:"cancel_reason" json:"cancel_reason"`
+	Reason            string    `db:"-" json:"reason,omitempty"`
+	CancelledByUserID string    `db:"cancelled_by_user_id" json:"cancelled_by_user_id"`
+	CancelledAt       time.Time `db:"cancelled_at" json:"cancelled_at"`
 }

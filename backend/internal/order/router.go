@@ -13,19 +13,19 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 	staffOrAdmin := middleware.RolesRequired("SUPER_ADMIN", "WAREHOUSE_STAFF")
 
 	// Cart routes
-	orderGroup.Get("/cart", authRequired, handler.GetCart)
-	orderGroup.Post("/cart", authRequired, handler.AddToCart)
-	orderGroup.Put("/cart/:id", authRequired, handler.UpdateCartItem)
-	orderGroup.Delete("/cart/:id", authRequired, handler.RemoveCartItem)
-	orderGroup.Post("/checkout", authRequired, handler.Checkout)
+	orderGroup.Get("/cart", handler.GetCart, authRequired)
+	orderGroup.Post("/cart", handler.AddToCart, authRequired)
+	orderGroup.Put("/cart/:id", handler.UpdateCartItem, authRequired)
+	orderGroup.Delete("/cart/:id", handler.RemoveCartItem, authRequired)
+	orderGroup.Post("/checkout", handler.Checkout, authRequired)
 
 	// Order routes
-	orderGroup.Get("/statuses", authRequired, handler.GetStatuses)
-	orderGroup.Get("/", authRequired, handler.GetOrders)
-	orderGroup.Get("/:id", authRequired, handler.GetOrderByID)
-	orderGroup.Post("/:id/cancel", authRequired, handler.CancelOrder)
-	orderGroup.Post("/:id/notes", authRequired, handler.AddOrderNote)
+	orderGroup.Get("/statuses", handler.GetStatuses, authRequired)
+	orderGroup.Get("/", handler.GetOrders, authRequired)
+	orderGroup.Get("/:id", handler.GetOrderByID, authRequired)
+	orderGroup.Post("/:id/cancel", handler.CancelOrder, authRequired)
+	orderGroup.Post("/:id/notes", handler.AddOrderNote, authRequired)
 
 	// Staff/Admin status update
-	orderGroup.Put("/:id/status", authRequired, staffOrAdmin, handler.UpdateOrderStatus)
+	orderGroup.Put("/:id/status", handler.UpdateOrderStatus, authRequired, staffOrAdmin)
 }

@@ -16,16 +16,16 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 
 	// Authenticated
 	authRequired := middleware.AuthRequired(cfg)
-	logisticsGroup.Get("/shipments/:id", authRequired, handler.GetShipmentByID)
-	logisticsGroup.Get("/order/:order_id", authRequired, handler.GetShipmentByOrderID)
+	logisticsGroup.Get("/shipments/:id", handler.GetShipmentByID, authRequired)
+	logisticsGroup.Get("/order/:order_id", handler.GetShipmentByOrderID, authRequired)
 
 	// Staff / Courier / Admin
 	opsOrAdmin := middleware.RolesRequired("SUPER_ADMIN", "WAREHOUSE_STAFF", "COURIER")
-	logisticsGroup.Get("/shipments", authRequired, opsOrAdmin, handler.GetShipments)
-	logisticsGroup.Post("/shipments", authRequired, opsOrAdmin, handler.CreateShipment)
-	logisticsGroup.Put("/shipments/:id/status", authRequired, opsOrAdmin, handler.UpdateStatus)
-	logisticsGroup.Post("/shipments/:id/pod", authRequired, opsOrAdmin, handler.SubmitPOD)
-	logisticsGroup.Get("/runs", authRequired, opsOrAdmin, handler.GetDeliveryRuns)
-	logisticsGroup.Get("/drivers", authRequired, opsOrAdmin, handler.GetDrivers)
-	logisticsGroup.Get("/vehicles", authRequired, opsOrAdmin, handler.GetVehicles)
+	logisticsGroup.Get("/shipments", handler.GetShipments, authRequired, opsOrAdmin)
+	logisticsGroup.Post("/shipments", handler.CreateShipment, authRequired, opsOrAdmin)
+	logisticsGroup.Put("/shipments/:id/status", handler.UpdateStatus, authRequired, opsOrAdmin)
+	logisticsGroup.Post("/shipments/:id/pod", handler.SubmitPOD, authRequired, opsOrAdmin)
+	logisticsGroup.Get("/runs", handler.GetDeliveryRuns, authRequired, opsOrAdmin)
+	logisticsGroup.Get("/drivers", handler.GetDrivers, authRequired, opsOrAdmin)
+	logisticsGroup.Get("/vehicles", handler.GetVehicles, authRequired, opsOrAdmin)
 }

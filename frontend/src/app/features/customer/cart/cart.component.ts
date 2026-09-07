@@ -1,9 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { CartService } from '../../../core/services/cart.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 
 interface VoucherValidationResponse {
@@ -29,11 +30,23 @@ interface APIResponse<T> {
         <p>Periksa kembali produk pilihan Anda sebelum checkout</p>
       </div>
 
-      @if (!cartService.cart() || (cartService.cart()?.items?.length || 0) === 0) {
+      @if (!auth.isLoggedIn()) {
+        <div class="empty-cart card">
+          <span class="empty-icon">🔒</span>
+          <h3>Silakan Masuk ke Akun Anda</h3>
+          <p>Masuk untuk melihat isi keranjang belanja atau melanjutkan ke proses checkout.</p>
+          <a routerLink="/auth/login" class="btn btn-primary mt-4" id="btn-login-cart">Masuk / Login Sekarang</a>
+        </div>
+      } @else if (cartService.loading()) {
+        <div class="empty-cart card">
+          <span class="empty-icon">⏳</span>
+          <h3>Memuat keranjang belanja...</h3>
+        </div>
+      } @else if (!cartService.cart() || (cartService.cart()?.items?.length || 0) === 0) {
         <div class="empty-cart card">
           <span class="empty-icon">🛒</span>
           <h3>Keranjang Anda masih kosong</h3>
-          <p>Temukan beras berkualitas, kopi kintamani, dan kebutuhan lainnya di katalog.</p>
+          <p>Temukan beras berkualitas, kopi kintamani, dan kebutuhan harian lainnya di katalog.</p>
           <a routerLink="/catalog" class="btn btn-primary" id="btn-shop-now">Mulai Belanja Sekarang</a>
         </div>
       } @else {
@@ -55,7 +68,11 @@ interface APIResponse<T> {
                   @for (item of cartService.cart()?.items; track item.id) {
                     <tr>
                       <td class="product-cell">
-                        <img [src]="item.image_url" [alt]="item.product_title" class="item-thumb" />
+                        <img 
+                          [src]="item.image_url || 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500'" 
+                          [alt]="item.product_title" 
+                          class="item-thumb" 
+                        />
                         <div>
                           <strong class="item-title">{{ item.product_title }}</strong>
                           <span class="item-sku">SKU: {{ item.product_sku }}</span>
@@ -118,32 +135,29 @@ interface APIResponse<T> {
                     Terapkan
                   </button>
                 </div>
-                @if (appliedDiscount() > 0) {
-                  <span class="voucher-success">✓ Diskon diterapkan: Rp {{ appliedDiscount() | number:'1.0-0' }}</span>
-                }
               </div>
 
-              <div class="summary-lines">
+              <div class="summary-rows">
                 <div class="summary-row">
-                  <span>Subtotal Barang ({{ cartService.itemCount() }} item)</span>
+                  <span>Total Harga ({{ cartService.itemCount() }} barang)</span>
                   <span>Rp {{ cartService.totalAmount() | number:'1.0-0' }}</span>
                 </div>
 
                 @if (appliedDiscount() > 0) {
                   <div class="summary-row discount-row">
-                    <span>Potongan Voucher</span>
+                    <span>Diskon Voucher</span>
                     <span>- Rp {{ appliedDiscount() | number:'1.0-0' }}</span>
                   </div>
                 }
 
                 <div class="summary-row">
-                  <span>Estimasi PPN (11%)</span>
-                  <span>Rp {{ getTax() | number:'1.0-0' }}</span>
+                  <span>Estimasi Ongkos Kirim</span>
+                  <span>Rp 15.000</span>
                 </div>
 
                 <div class="summary-row">
-                  <span>Estimasi Ongkir</span>
-                  <span>Rp 15.000</span>
+                  <span>PPN (11%)</span>
+                  <span>Rp {{ getTax() | number:'1.0-0' }}</span>
                 </div>
 
                 <div class="summary-divider"></div>
@@ -156,10 +170,10 @@ interface APIResponse<T> {
 
               <button
                 (click)="goToCheckout()"
-                class="btn btn-primary btn-lg checkout-btn"
-                id="btn-go-checkout"
+                class="btn btn-primary checkout-btn"
+                id="btn-checkout"
               >
-                Lanjut ke Pengiriman & Checkout →
+                Lanjut ke Pembayaran ➔
               </button>
             </div>
           </div>
@@ -175,43 +189,47 @@ interface APIResponse<T> {
       margin-bottom: 2rem;
     }
     .page-header h1 {
-      font-size: 1.75rem;
+      font-size: 2rem;
       font-weight: 800;
       color: var(--text-primary);
+      margin-bottom: 0.5rem;
     }
     .page-header p {
       color: var(--text-secondary);
-      font-size: 0.875rem;
-      margin-top: 0.25rem;
     }
     .empty-cart {
       text-align: center;
       padding: 4rem 2rem;
+      max-width: 500px;
+      margin: 0 auto;
     }
     .empty-icon {
-      font-size: 3.5rem;
+      font-size: 4rem;
       display: inline-block;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
     .empty-cart h3 {
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
     }
     .empty-cart p {
       color: var(--text-secondary);
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
     .cart-layout {
       display: grid;
       grid-template-columns: 1fr 380px;
-      gap: 1.5rem;
+      gap: 2rem;
       align-items: start;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 968px) {
       .cart-layout {
         grid-template-columns: 1fr;
       }
+    }
+    .table-container {
+      overflow-x: auto;
     }
     .product-cell {
       display: flex;
@@ -221,81 +239,78 @@ interface APIResponse<T> {
     .item-thumb {
       width: 60px;
       height: 60px;
-      object-fit: cover;
       border-radius: var(--radius-md);
+      object-fit: cover;
+      border: 1px solid var(--border-color);
     }
     .item-title {
       display: block;
       color: var(--text-primary);
-      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
     }
     .item-sku {
       font-size: 0.75rem;
       color: var(--text-muted);
+      font-family: monospace;
     }
     .qty-stepper {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
       overflow: hidden;
-      width: fit-content;
     }
     .qty-btn {
       background: var(--bg-surface-secondary);
       border: none;
-      padding: 0.25rem 0.625rem;
+      padding: 0.25rem 0.75rem;
+      font-size: 1rem;
       cursor: pointer;
-      font-weight: 700;
+      color: var(--text-primary);
     }
-    .qty-btn:hover:not(:disabled) {
-      background: var(--border-color);
+    .qty-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     .qty-val {
       padding: 0.25rem 0.75rem;
-      font-size: 0.875rem;
       font-weight: 600;
+      min-width: 32px;
+      text-align: center;
     }
     .btn-delete {
-      background: transparent;
+      background: none;
       border: none;
-      font-size: 1.125rem;
       cursor: pointer;
-      padding: 0.25rem;
-      border-radius: var(--radius-sm);
+      font-size: 1.25rem;
+      opacity: 0.7;
+      transition: opacity var(--transition-fast);
     }
     .btn-delete:hover {
-      background: var(--color-danger-light);
+      opacity: 1;
     }
     .summary-card {
-      padding: 1.5rem;
+      position: sticky;
+      top: 5rem;
     }
     .summary-card h3 {
-      font-size: 1.125rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
     }
     .voucher-box {
       margin-bottom: 1.5rem;
-      padding-bottom: 1.25rem;
-      border-bottom: 1px solid var(--border-color);
     }
     .voucher-input-group {
       display: flex;
       gap: 0.5rem;
     }
-    .voucher-success {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--color-secondary-hover);
-      font-weight: 600;
-      margin-top: 0.5rem;
-    }
-    .summary-lines {
+    .summary-rows {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      font-size: 0.875rem;
     }
     .summary-row {
       display: flex;
@@ -326,14 +341,21 @@ interface APIResponse<T> {
     }
   `]
 })
-export class CartComponent {
+export class CartComponent implements OnInit {
   cartService = inject(CartService);
+  auth = inject(AuthService);
   private http = inject(HttpClient);
   private notify = inject(NotificationService);
   private router = inject(Router);
 
   voucherCode = '';
   appliedDiscount = signal(0);
+
+  ngOnInit() {
+    if (this.auth.isLoggedIn()) {
+      this.cartService.loadCart().subscribe();
+    }
+  }
 
   changeQty(itemId: string, newQty: number) {
     if (newQty <= 0) return;

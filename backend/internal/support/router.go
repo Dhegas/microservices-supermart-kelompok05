@@ -15,17 +15,17 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 
 	// Authenticated
 	authRequired := middleware.AuthRequired(cfg)
-	supportGroup.Get("/tickets", authRequired, handler.GetTickets)
-	supportGroup.Get("/tickets/:id", authRequired, handler.GetTicketByID)
-	supportGroup.Post("/tickets", authRequired, handler.CreateTicket)
-	supportGroup.Post("/tickets/:id/messages", authRequired, handler.AddMessage)
-	supportGroup.Post("/tickets/:id/rate", authRequired, handler.RateTicket)
-	supportGroup.Get("/disputes", authRequired, handler.GetDisputes)
-	supportGroup.Post("/disputes", authRequired, handler.CreateDispute)
+	supportGroup.Get("/tickets", handler.GetTickets, authRequired)
+	supportGroup.Get("/tickets/:id", handler.GetTicketByID, authRequired)
+	supportGroup.Post("/tickets", handler.CreateTicket, authRequired)
+	supportGroup.Post("/tickets/:id/messages", handler.AddMessage, authRequired)
+	supportGroup.Post("/tickets/:id/rate", handler.RateTicket, authRequired)
+	supportGroup.Get("/disputes", handler.GetDisputes, authRequired)
+	supportGroup.Post("/disputes", handler.CreateDispute, authRequired)
 
 	// Support Agent / Admin
 	agentOrAdmin := middleware.RolesRequired("SUPER_ADMIN", "CS_AGENT")
-	supportGroup.Put("/tickets/:id/status", authRequired, agentOrAdmin, handler.UpdateStatus)
-	supportGroup.Put("/tickets/:id/assign", authRequired, agentOrAdmin, handler.AssignTicket)
-	supportGroup.Post("/faq", authRequired, agentOrAdmin, handler.CreateFAQ)
+	supportGroup.Put("/tickets/:id/status", handler.UpdateStatus, authRequired, agentOrAdmin)
+	supportGroup.Put("/tickets/:id/assign", handler.AssignTicket, authRequired, agentOrAdmin)
+	supportGroup.Post("/faq", handler.CreateFAQ, authRequired, agentOrAdmin)
 }

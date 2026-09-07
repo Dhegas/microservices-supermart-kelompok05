@@ -14,15 +14,15 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 
 	// Authenticated
 	authRequired := middleware.AuthRequired(cfg)
-	paymentGroup.Get("/invoices", authRequired, handler.GetInvoices)
-	paymentGroup.Get("/invoices/:id", authRequired, handler.GetInvoiceByID)
-	paymentGroup.Post("/pay", authRequired, handler.PayInvoice)
-	paymentGroup.Get("/credits", authRequired, handler.GetStoreCredit)
-	paymentGroup.Post("/credits/topup", authRequired, handler.TopupStoreCredit)
-	paymentGroup.Get("/refunds", authRequired, handler.GetRefunds)
-	paymentGroup.Post("/refunds", authRequired, handler.RequestRefund)
+	paymentGroup.Get("/invoices", handler.GetInvoices, authRequired)
+	paymentGroup.Get("/invoices/:id", handler.GetInvoiceByID, authRequired)
+	paymentGroup.Post("/pay", handler.PayInvoice, authRequired)
+	paymentGroup.Get("/credits", handler.GetStoreCredit, authRequired)
+	paymentGroup.Post("/credits/topup", handler.TopupStoreCredit, authRequired)
+	paymentGroup.Get("/refunds", handler.GetRefunds, authRequired)
+	paymentGroup.Post("/refunds", handler.RequestRefund, authRequired)
 
 	// Admin
 	adminOnly := middleware.RolesRequired("SUPER_ADMIN")
-	paymentGroup.Put("/refunds/:id/approve", authRequired, adminOnly, handler.ApproveRefund)
+	paymentGroup.Put("/refunds/:id/approve", handler.ApproveRefund, authRequired, adminOnly)
 }

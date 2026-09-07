@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -363,8 +363,15 @@ import { NotificationService } from '../../core/services/notification.service';
     }
   `]
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   auth = inject(AuthService);
   cart = inject(CartService);
   notify = inject(NotificationService);
+
+  ngOnInit() {
+    if (this.auth.isLoggedIn()) {
+      this.cart.loadCart().subscribe();
+    }
+  }
 }
+

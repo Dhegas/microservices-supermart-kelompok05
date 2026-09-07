@@ -18,13 +18,13 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 
 	// Authenticated routes
 	authRequired := middleware.AuthRequired(cfg)
-	catalogGroup.Post("/products/:id/reviews", authRequired, handler.AddReview)
+	catalogGroup.Post("/products/:id/reviews", handler.AddReview, authRequired)
 
 	// Admin routes
 	adminOnly := middleware.RolesRequired("SUPER_ADMIN")
-	catalogGroup.Post("/products", authRequired, adminOnly, handler.CreateProduct)
-	catalogGroup.Put("/products/:id", authRequired, adminOnly, handler.UpdateProduct)
-	catalogGroup.Delete("/products/:id", authRequired, adminOnly, handler.DeleteProduct)
-	catalogGroup.Post("/categories", authRequired, adminOnly, handler.CreateCategory)
-	catalogGroup.Post("/brands", authRequired, adminOnly, handler.CreateBrand)
+	catalogGroup.Post("/products", handler.CreateProduct, authRequired, adminOnly)
+	catalogGroup.Put("/products/:id", handler.UpdateProduct, authRequired, adminOnly)
+	catalogGroup.Delete("/products/:id", handler.DeleteProduct, authRequired, adminOnly)
+	catalogGroup.Post("/categories", handler.CreateCategory, authRequired, adminOnly)
+	catalogGroup.Post("/brands", handler.CreateBrand, authRequired, adminOnly)
 }

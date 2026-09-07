@@ -109,13 +109,27 @@ interface APIResponse<T> {
                 <label class="form-label">Pilih Metode Pembayaran</label>
                 <div class="payment-methods-grid">
                   @for (pm of paymentMethods(); track pm.id) {
-                    <label class="pm-card" [class.selected]="selectedPaymentMethodId === pm.id">
-                      <input type="radio" name="paymentMethod" [value]="pm.id" [(ngModel)]="selectedPaymentMethodId" />
+                    <div
+                      class="pm-card"
+                      [class.selected]="selectedPaymentMethodId === pm.id"
+                      (click)="selectedPaymentMethodId = pm.id"
+                      style="cursor: pointer;"
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        [value]="pm.id"
+                        [checked]="selectedPaymentMethodId === pm.id"
+                        (change)="selectedPaymentMethodId = pm.id"
+                      />
                       <div>
                         <strong>{{ pm.method_name }}</strong>
                         <span class="pm-code">{{ pm.method_code }}</span>
                       </div>
-                    </label>
+                    </div>
+                  }
+                  @if (paymentMethods().length === 0) {
+                    <p class="text-muted" style="padding: 1rem;">Memuat daftar metode pembayaran...</p>
                   }
                 </div>
               </div>
@@ -125,6 +139,7 @@ interface APIResponse<T> {
                 class="btn btn-primary btn-lg"
                 style="width: 100%; margin-top: 1rem;"
                 [disabled]="paying() || !selectedPaymentMethodId"
+                id="btn-confirm-pay"
               >
                 @if (paying()) {
                   <span>Memverifikasi Pembayaran...</span>
@@ -458,40 +473,39 @@ export class OrdersComponent implements OnInit {
 
   openPayModal(order: Order) {
     this.selectedOrderToPay.set(order);
+    if (!this.selectedPaymentMethodId && this.paymentMethods().length > 0) {
+      this.selectedPaymentMethodId = this.paymentMethods()[0].id;
+    }
   }
 
   processPayment() {
     const order = this.selectedOrderToPay();
-    if (!order || !this.selectedPaymentMethodId) return;
+    if (!order) return;
+
+    if (!this.selectedPaymentMethodId) {
+      if (this.paymentMethods().length > 0) {
+        this.selectedPaymentMethodId = this.paymentMethods()[0].id;
+      } else {
+        this.notify.warning('Pilih metode pembayaran terlebih dahulu');
+        return;
+      }
+    }
 
     this.paying.set(true);
-    // Find invoice for this order
-    this.http.get<APIResponse<PaymentInvoice[]>>('/api/v1/payments/invoices').subscribe({
-      next: res => {
-        const inv = res.data?.find(i => i.order_id === order.id);
-        if (inv) {
-          this.http.post<APIResponse<any>>('/api/v1/payments/pay', {
-            invoice_id: inv.id,
-            payment_method_id: this.selectedPaymentMethodId
-          }).subscribe({
-            next: () => {
-              this.notify.success('Pembayaran lunas terverifikasi!');
-              this.paying.set(false);
-              this.selectedOrderToPay.set(null);
-              this.loadOrders();
-            },
-            error: (err) => {
-              this.notify.error(err.error?.message || 'Gagal memproses pembayaran');
-              this.paying.set(false);
-            }
-          });
-        } else {
-          this.notify.error('Faktur tagihan tidak ditemukan');
-          this.paying.set(false);
-        }
+
+    // Call payment API with order_id and payment_method_id
+    this.http.post<APIResponse<any>>('/api/v1/payments/pay', {
+      order_id: order.id,
+      payment_method_id: this.selectedPaymentMethodId
+    }).subscribe({
+      next: () => {
+        this.notify.success('Pembayaran lunas terverifikasi! Pesanan segera diproses gudang.');
+        this.paying.set(false);
+        this.selectedOrderToPay.set(null);
+        this.loadOrders();
       },
-      error: () => {
-        this.notify.error('Gagal memuat faktur');
+      error: (err) => {
+        this.notify.error(err.error?.message || 'Gagal memproses pembayaran');
         this.paying.set(false);
       }
     });

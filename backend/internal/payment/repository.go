@@ -97,10 +97,56 @@ func (r *mysqlRepository) GetInvoiceByOrderID(orderID string) (*PaymentInvoice, 
 	`
 	var inv PaymentInvoice
 	err := r.db.Get(&inv, query, orderID)
-	if err != nil {
+	if err == nil {
+		return &inv, nil
+	}
+	if err != sql.ErrNoRows {
 		return nil, err
 	}
-	return &inv, nil
+
+	// Auto-create invoice if missing for this existing order
+	var o struct {
+		ID             string  `db:"id"`
+		OrderNumber    string  `db:"order_number"`
+		CustomerID     string  `db:"customer_id"`
+		TotalNetAmount float64 `db:"total_net_amount"`
+		CustomerName   string  `db:"customer_name"`
+	}
+	orderQuery := `
+		SELECT o.id, o.order_number, o.customer_id, o.total_net_amount, u.full_name AS customer_name
+		FROM orders o
+		JOIN users u ON o.customer_id = u.id
+		WHERE o.id = ? LIMIT 1
+	`
+	err = r.db.Get(&o, orderQuery, orderID)
+	if err != nil {
+		return nil, fmt.Errorf("order not found: %w", err)
+	}
+
+	invID := uuid.NewString()
+	invNumber := fmt.Sprintf("INV-%s-%04d", time.Now().Format("20060102"), time.Now().Unix()%10000)
+	dueDate := time.Now().Add(24 * time.Hour)
+
+	insertQuery := `
+		INSERT INTO payment_invoices (id, invoice_number, order_id, customer_id, amount, payment_status, due_date)
+		VALUES (?, ?, ?, ?, ?, 'UNPAID', ?)
+	`
+	_, err = r.db.Exec(insertQuery, invID, invNumber, o.ID, o.CustomerID, o.TotalNetAmount, dueDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create invoice: %w", err)
+	}
+
+	return &PaymentInvoice{
+		ID:            invID,
+		InvoiceNumber: invNumber,
+		OrderID:       o.ID,
+		CustomerID:    o.CustomerID,
+		Amount:        o.TotalNetAmount,
+		PaymentStatus: "UNPAID",
+		DueDate:       dueDate,
+		OrderNumber:   o.OrderNumber,
+		CustomerName:  o.CustomerName,
+	}, nil
 }
 
 func (r *mysqlRepository) CreateInvoice(inv *PaymentInvoice) error {

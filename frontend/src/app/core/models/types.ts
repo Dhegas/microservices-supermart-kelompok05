@@ -278,6 +278,16 @@ export interface PurchaseOrder {
   warehouse_name?: string;
 }
 
+export interface PurchaseOrderItem {
+  id: string;
+  purchase_order_id: string;
+  product_id: string;
+  ordered_qty: number;
+  unit_cost: number;
+  product_title?: string;
+  product_sku?: string;
+}
+
 export interface CustomerTicket {
   id: string;
   ticket_code: string;

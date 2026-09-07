@@ -16,6 +16,7 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 	authRequired := middleware.AuthRequired(cfg)
 	paymentGroup.Get("/invoices", handler.GetInvoices, authRequired)
 	paymentGroup.Get("/invoices/:id", handler.GetInvoiceByID, authRequired)
+	paymentGroup.Get("/invoices/order/:order_id", handler.GetInvoiceByOrderID, authRequired)
 	paymentGroup.Post("/pay", handler.PayInvoice, authRequired)
 	paymentGroup.Get("/credits", handler.GetStoreCredit, authRequired)
 	paymentGroup.Post("/credits/topup", handler.TopupStoreCredit, authRequired)

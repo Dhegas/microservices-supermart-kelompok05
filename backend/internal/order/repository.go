@@ -180,6 +180,18 @@ func (r *mysqlRepository) CreateOrder(o *Order, items []OrderItem, shipping *Ord
 		return fmt.Errorf("insert status history: %w", err)
 	}
 
+	// Generate invoice for payment domain (monolithic cross-domain coupling)
+	invID := uuid.NewString()
+	invNumber := fmt.Sprintf("INV-%s-%04d", now.Format("20060102"), time.Now().Unix()%10000)
+	dueDate := now.Add(24 * time.Hour)
+	_, err = tx.Exec(`
+		INSERT INTO payment_invoices (id, invoice_number, order_id, customer_id, amount, payment_status, due_date)
+		VALUES (?, ?, ?, ?, ?, 'UNPAID', ?)
+	`, invID, invNumber, o.ID, o.CustomerID, o.TotalNetAmount, dueDate)
+	if err != nil {
+		return fmt.Errorf("insert payment invoice: %w", err)
+	}
+
 	return tx.Commit()
 }
 

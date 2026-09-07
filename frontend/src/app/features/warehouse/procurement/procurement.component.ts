@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { PurchaseOrder, GoodsReceiptNote, ApiResponse, Product } from '../../../core/models/types';
+import { PurchaseOrder, PurchaseOrderItem, GoodsReceiptNote, ApiResponse, Product } from '../../../core/models/types';
 import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
@@ -101,6 +101,9 @@ import { NotificationService } from '../../../core/services/notification.service
                         @if (po.status === 'PENDING') {
                           <button (click)="approvePO(po.id)" class="btn btn-outline btn-sm mr-2">
                             Setujui
+                          </button>
+                          <button (click)="openReceiveModal(po)" class="btn btn-primary btn-sm">
+                            📥 Terima GRN
                           </button>
                         }
                         @if (po.status === 'APPROVED') {
@@ -393,12 +396,27 @@ export class ProcurementComponent implements OnInit {
   }
 
   openReceiveModal(po: PurchaseOrder) {
+    if (po.status === 'PENDING') {
+      this.approvePO(po.id);
+    }
     this.selectedPO.set(po);
     this.receiveForm = {
       product_id: this.products().length > 0 ? this.products()[0].id : '',
       received_qty: 100,
       notes: 'Kondisi barang baik & sesuai faktur'
     };
+
+    // Pre-fill from PO details if available
+    this.http.get<ApiResponse<{ purchase_order: PurchaseOrder; items: PurchaseOrderItem[] }>>(`/api/v1/procurement/purchase-orders/${po.id}`)
+      .subscribe({
+        next: (res) => {
+          if (res.data?.items && res.data.items.length > 0) {
+            const item = res.data.items[0];
+            this.receiveForm.product_id = item.product_id;
+            this.receiveForm.received_qty = item.ordered_qty;
+          }
+        }
+      });
   }
 
   closeReceiveModal() {

@@ -74,8 +74,16 @@ func (s *paymentService) CreateInvoice(orderID, customerID string, amount float6
 }
 
 func (s *paymentService) PayInvoice(req PayInvoiceRequest) (*PaymentTransaction, error) {
-	inv, err := s.repo.GetInvoiceByID(req.InvoiceID)
-	if err != nil {
+	var inv *PaymentInvoice
+	var err error
+
+	if req.InvoiceID != "" {
+		inv, err = s.repo.GetInvoiceByID(req.InvoiceID)
+	}
+	if (inv == nil || err != nil) && req.OrderID != "" {
+		inv, err = s.repo.GetInvoiceByOrderID(req.OrderID)
+	}
+	if err != nil || inv == nil {
 		return nil, errors.New("invoice not found")
 	}
 

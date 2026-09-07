@@ -175,19 +175,20 @@ func (r *mysqlRepository) CreateGRN(grn *GoodsReceiptNote, items []GoodsReceiptI
 		if itemID == "" {
 			itemID = uuid.NewString()
 		}
-		_, err = tx.Exec("INSERT INTO goods_receipt_items (id, grn_id, product_id, received_qty, notes) VALUES (?, ?, ?, ?, ?)",
-			itemID, grn.ID, item.ProductID, item.ReceivedQty, item.Notes)
+		_, err = tx.Exec("INSERT INTO goods_receipt_items (id, grn_id, product_id, received_qty) VALUES (?, ?, ?, ?)",
+			itemID, grn.ID, item.ProductID, item.ReceivedQty)
 		if err != nil {
-			return err
+			return fmt.Errorf("insert GRN item: %w", err)
 		}
 
 		// Increase stock in warehouse
-		stockQuery := `
-			INSERT INTO inventory_stocks (id, product_id, warehouse_id, quantity_on_hand, quantity_reserved)
-			VALUES (?, ?, ?, ?, 0)
-			ON DUPLICATE KEY UPDATE quantity_on_hand = quantity_on_hand + VALUES(quantity_on_hand), updated_at = NOW()
-		`
-		_, err = tx.Exec(stockQuery, uuid.NewString(), item.ProductID, warehouseID, item.ReceivedQty)
+		var stockID string
+		err = tx.Get(&stockID, "SELECT id FROM inventory_stocks WHERE product_id = ? AND warehouse_id = ? LIMIT 1", item.ProductID, warehouseID)
+		if err == nil {
+			_, err = tx.Exec("UPDATE inventory_stocks SET quantity_on_hand = quantity_on_hand + ?, updated_at = NOW() WHERE id = ?", item.ReceivedQty, stockID)
+		} else {
+			_, err = tx.Exec("INSERT INTO inventory_stocks (id, product_id, warehouse_id, quantity_on_hand, quantity_reserved) VALUES (?, ?, ?, ?, 0)", uuid.NewString(), item.ProductID, warehouseID, item.ReceivedQty)
+		}
 		if err != nil {
 			return fmt.Errorf("update stock on GRN: %w", err)
 		}

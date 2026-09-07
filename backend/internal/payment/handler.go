@@ -49,6 +49,15 @@ func (h *Handler) GetInvoiceByID(c fiber.Ctx) error {
 	})
 }
 
+func (h *Handler) GetInvoiceByOrderID(c fiber.Ctx) error {
+	orderID := c.Params("order_id")
+	invoice, err := h.service.GetInvoiceByOrderID(orderID)
+	if err != nil {
+		return response.Error(c, fiber.StatusNotFound, "Invoice not found for order", err.Error())
+	}
+	return response.Success(c, fiber.StatusOK, "Invoice details retrieved", invoice)
+}
+
 func (h *Handler) PayInvoice(c fiber.Ctx) error {
 	var req PayInvoiceRequest
 	if err := c.Bind().Body(&req); err != nil {

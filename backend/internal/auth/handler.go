@@ -221,3 +221,59 @@ func (h *Handler) GetPermissions(c fiber.Ctx) error {
 
 	return response.Success(c, fiber.StatusOK, "Permissions retrieved", permissions)
 }
+
+func (h *Handler) CreateUser(c fiber.Ctx) error {
+	var req AdminCreateUserRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return response.Error(c, fiber.StatusBadRequest, "Payload request tidak valid", err.Error())
+	}
+
+	user, err := h.service.CreateUserByAdmin(req)
+	if err != nil {
+		return response.Error(c, fiber.StatusBadRequest, "Gagal membuat pengguna baru", err.Error())
+	}
+
+	return response.Success(c, fiber.StatusCreated, "Pengguna berhasil dibuat", user)
+}
+
+func (h *Handler) UpdateUser(c fiber.Ctx) error {
+	id := c.Params("id")
+	var req AdminUpdateUserRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return response.Error(c, fiber.StatusBadRequest, "Payload request tidak valid", err.Error())
+	}
+
+	if err := h.service.UpdateUserByAdmin(id, req); err != nil {
+		return response.Error(c, fiber.StatusBadRequest, "Gagal memperbarui pengguna", err.Error())
+	}
+
+	return response.Success(c, fiber.StatusOK, "Data pengguna berhasil diperbarui", nil)
+}
+
+func (h *Handler) ToggleUserStatus(c fiber.Ctx) error {
+	id := c.Params("id")
+	var req ToggleStatusRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return response.Error(c, fiber.StatusBadRequest, "Payload request tidak valid", err.Error())
+	}
+
+	if err := h.service.ToggleUserStatus(id, req.IsActive); err != nil {
+		return response.Error(c, fiber.StatusBadRequest, "Gagal mengubah status pengguna", err.Error())
+	}
+
+	msg := "Akun pengguna berhasil diaktifkan"
+	if !req.IsActive {
+		msg = "Akun pengguna berhasil dinonaktifkan"
+	}
+	return response.Success(c, fiber.StatusOK, msg, nil)
+}
+
+func (h *Handler) DeleteUser(c fiber.Ctx) error {
+	id := c.Params("id")
+	if err := h.service.DeleteUser(id); err != nil {
+		return response.Error(c, fiber.StatusBadRequest, "Gagal menghapus pengguna", err.Error())
+	}
+
+	return response.Success(c, fiber.StatusOK, "Pengguna berhasil dihapus", nil)
+}
+

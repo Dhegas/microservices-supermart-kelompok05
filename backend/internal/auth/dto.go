@@ -47,3 +47,25 @@ type KYCRequest struct {
 type VerifyKYCRequest struct {
 	Status string `json:"status"` // VERIFIED or REJECTED
 }
+
+type AdminCreateUserRequest struct {
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	FullName    string `json:"full_name"`
+	PhoneNumber string `json:"phone_number"`
+	Role        string `json:"role"` // WAREHOUSE_STAFF, COURIER, CS_AGENT, CUSTOMER, SUPER_ADMIN
+	IsActive    *bool  `json:"is_active"`
+}
+
+type AdminUpdateUserRequest struct {
+	FullName    string `json:"full_name"`
+	PhoneNumber string `json:"phone_number"`
+	Role        string `json:"role"`
+	IsActive    *bool  `json:"is_active"`
+	Password    string `json:"password,omitempty"`
+}
+
+type ToggleStatusRequest struct {
+	IsActive bool `json:"is_active"`
+}
+

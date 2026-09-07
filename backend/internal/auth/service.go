@@ -21,6 +21,10 @@ type Service interface {
 	GetKYC(userID string) (*UserKYCDocument, error)
 	VerifyKYC(kycID, status string) error
 	GetAllUsers() ([]User, error)
+	CreateUserByAdmin(req AdminCreateUserRequest) (*User, error)
+	UpdateUserByAdmin(id string, req AdminUpdateUserRequest) error
+	ToggleUserStatus(id string, isActive bool) error
+	DeleteUser(id string) error
 	GetRoles() ([]Role, error)
 	GetPermissions() ([]Permission, error)
 }
@@ -193,3 +197,82 @@ func (s *authService) GetRoles() ([]Role, error) {
 func (s *authService) GetPermissions() ([]Permission, error) {
 	return s.repo.GetPermissions()
 }
+
+func (s *authService) CreateUserByAdmin(req AdminCreateUserRequest) (*User, error) {
+	if req.Email == "" || req.Password == "" || req.FullName == "" {
+		return nil, errors.New("email, password, dan nama lengkap wajib diisi")
+	}
+
+	existing, _ := s.repo.GetUserByEmail(req.Email)
+	if existing != nil {
+		return nil, errors.New("email sudah terdaftar di sistem")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, errors.New("gagal mengenkripsi password")
+	}
+
+	isActive := true
+	if req.IsActive != nil {
+		isActive = *req.IsActive
+	}
+
+	var phone *string
+	if req.PhoneNumber != "" {
+		phone = &req.PhoneNumber
+	}
+
+	user := &User{
+		ID:           uuid.NewString(),
+		Email:        req.Email,
+		PasswordHash: string(hashedPassword),
+		FullName:     req.FullName,
+		PhoneNumber:  phone,
+		IsActive:     isActive,
+	}
+
+	roleName := req.Role
+	if roleName == "" {
+		roleName = "CUSTOMER"
+	}
+
+	if err := s.repo.AdminCreateUser(user, roleName); err != nil {
+		return nil, err
+	}
+
+	user.RoleName = roleName
+	return user, nil
+}
+
+func (s *authService) UpdateUserByAdmin(id string, req AdminUpdateUserRequest) error {
+	existing, err := s.repo.GetUserByID(id)
+	if err != nil || existing == nil {
+		return errors.New("user tidak ditemukan")
+	}
+
+	var newPasswordHash string
+	if req.Password != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return errors.New("gagal mengenkripsi password baru")
+		}
+		newPasswordHash = string(hashed)
+	}
+
+	fullName := req.FullName
+	if fullName == "" {
+		fullName = existing.FullName
+	}
+
+	return s.repo.AdminUpdateUser(id, fullName, req.PhoneNumber, req.Role, req.IsActive, newPasswordHash)
+}
+
+func (s *authService) ToggleUserStatus(id string, isActive bool) error {
+	return s.repo.ToggleUserStatus(id, isActive)
+}
+
+func (s *authService) DeleteUser(id string) error {
+	return s.repo.DeleteUser(id)
+}
+

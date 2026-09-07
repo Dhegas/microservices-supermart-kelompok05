@@ -26,6 +26,10 @@ func RegisterRoutes(router fiber.Router, handler *Handler, cfg *config.Config) {
 	// Admin routes
 	adminOnly := middleware.RolesRequired("SUPER_ADMIN")
 	authGroup.Get("/users", handler.GetAllUsers, authRequired, adminOnly)
+	authGroup.Post("/users", handler.CreateUser, authRequired, adminOnly)
+	authGroup.Put("/users/:id", handler.UpdateUser, authRequired, adminOnly)
+	authGroup.Put("/users/:id/status", handler.ToggleUserStatus, authRequired, adminOnly)
+	authGroup.Delete("/users/:id", handler.DeleteUser, authRequired, adminOnly)
 	authGroup.Get("/roles", handler.GetRoles, authRequired, adminOnly)
 	authGroup.Get("/permissions", handler.GetPermissions, authRequired, adminOnly)
 	authGroup.Put("/kyc/:id/verify", handler.VerifyKYC, authRequired, adminOnly)

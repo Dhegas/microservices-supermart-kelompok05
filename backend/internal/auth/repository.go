@@ -15,6 +15,10 @@ type Repository interface {
 	CreateUser(user *User, roleID string) error
 	GetAllUsers() ([]User, error)
 	UpdateUser(user *User) error
+	AdminCreateUser(u *User, roleName string) error
+	AdminUpdateUser(id, fullName, phoneNumber, roleName string, isActive *bool, newPasswordHash string) error
+	ToggleUserStatus(id string, isActive bool) error
+	DeleteUser(id string) error
 	GetUserProfile(userID string) (*UserProfile, error)
 	UpsertUserProfile(profile *UserProfile) error
 	GetUserAddresses(userID string) ([]UserAddress, error)
@@ -222,3 +226,83 @@ func (r *mysqlRepository) GetPermissions() ([]Permission, error) {
 	err := r.db.Select(&permissions, "SELECT * FROM permissions")
 	return permissions, err
 }
+
+func (r *mysqlRepository) AdminCreateUser(u *User, roleName string) error {
+	var role Role
+	if roleName == "" {
+		roleName = "CUSTOMER"
+	}
+	err := r.db.Get(&role, "SELECT id, role_name FROM roles WHERE role_name = ? LIMIT 1", roleName)
+	if err != nil {
+		return fmt.Errorf("role '%s' tidak ditemukan: %w", roleName, err)
+	}
+
+	return r.CreateUser(u, role.ID)
+}
+
+func (r *mysqlRepository) AdminUpdateUser(id, fullName, phoneNumber, roleName string, isActive *bool, newPasswordHash string) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if newPasswordHash != "" && isActive != nil {
+		_, err = tx.Exec(`
+			UPDATE users 
+			SET full_name = ?, phone_number = ?, is_active = ?, password_hash = ?, updated_at = NOW() 
+			WHERE id = ?
+		`, fullName, phoneNumber, *isActive, newPasswordHash, id)
+	} else if newPasswordHash != "" {
+		_, err = tx.Exec(`
+			UPDATE users 
+			SET full_name = ?, phone_number = ?, password_hash = ?, updated_at = NOW() 
+			WHERE id = ?
+		`, fullName, phoneNumber, newPasswordHash, id)
+	} else if isActive != nil {
+		_, err = tx.Exec(`
+			UPDATE users 
+			SET full_name = ?, phone_number = ?, is_active = ?, updated_at = NOW() 
+			WHERE id = ?
+		`, fullName, phoneNumber, *isActive, id)
+	} else {
+		_, err = tx.Exec(`
+			UPDATE users 
+			SET full_name = ?, phone_number = ?, updated_at = NOW() 
+			WHERE id = ?
+		`, fullName, phoneNumber, id)
+	}
+	if err != nil {
+		return fmt.Errorf("gagal update data user: %w", err)
+	}
+
+	if roleName != "" {
+		var role Role
+		err = tx.Get(&role, "SELECT id, role_name FROM roles WHERE role_name = ? LIMIT 1", roleName)
+		if err != nil {
+			return fmt.Errorf("role '%s' tidak ditemukan: %w", roleName, err)
+		}
+		_, _ = tx.Exec("DELETE FROM user_roles WHERE user_id = ?", id)
+		_, err = tx.Exec("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", id, role.ID)
+		if err != nil {
+			return fmt.Errorf("gagal update user_roles: %w", err)
+		}
+	}
+
+	return tx.Commit()
+}
+
+func (r *mysqlRepository) ToggleUserStatus(id string, isActive bool) error {
+	_, err := r.db.Exec("UPDATE users SET is_active = ?, updated_at = NOW() WHERE id = ?", isActive, id)
+	return err
+}
+
+func (r *mysqlRepository) DeleteUser(id string) error {
+	// Attempt delete; if foreign key blocks, fallback to deactivating
+	_, err := r.db.Exec("DELETE FROM users WHERE id = ?", id)
+	if err != nil {
+		_, err = r.db.Exec("UPDATE users SET is_active = 0, updated_at = NOW() WHERE id = ?", id)
+	}
+	return err
+}
+

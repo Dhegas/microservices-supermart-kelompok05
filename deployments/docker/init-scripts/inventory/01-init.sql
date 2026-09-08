@@ -1,33 +1,39 @@
 -- ============================================================
 -- Inventory Service – DDL & Seed Script
 -- Domain  : Stock & warehouse management
--- DBMS    : MySQL 8.0
+-- DBMS    : PostgreSQL 15 (Alpine)
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS inventory_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE inventory_db;
+-- Tipe ENUM untuk movement type jika belum ada
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'stock_movement_type') THEN
+        CREATE TYPE stock_movement_type AS ENUM ('in', 'out', 'reserve', 'release');
+    END IF;
+END $$;
 
 -- Tabel stock
 CREATE TABLE IF NOT EXISTS stock (
-    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    product_id  BIGINT UNSIGNED NOT NULL UNIQUE,  -- FK logis ke catalog_db.products
-    quantity    INT UNSIGNED    NOT NULL DEFAULT 0,
-    reserved    INT UNSIGNED    NOT NULL DEFAULT 0,
-    updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    id          BIGSERIAL PRIMARY KEY,
+    product_id  BIGINT NOT NULL UNIQUE,  -- FK logis ke catalog_db.products
+    quantity    INT NOT NULL DEFAULT 0,
+    reserved    INT NOT NULL DEFAULT 0,
+    updated_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Tabel stock_movements (riwayat mutasi stok)
 CREATE TABLE IF NOT EXISTS stock_movements (
-    id          BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    product_id  BIGINT UNSIGNED NOT NULL,
-    type        ENUM('in','out','reserve','release') NOT NULL,
-    qty         INT             NOT NULL,
+    id          BIGSERIAL PRIMARY KEY,
+    product_id  BIGINT NOT NULL,
+    type        stock_movement_type NOT NULL,
+    qty         INT NOT NULL,
     note        VARCHAR(255),
-    created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Seed initial stock
-INSERT IGNORE INTO stock (product_id, quantity) VALUES
+INSERT INTO stock (product_id, quantity) VALUES
 (1, 500),
 (2, 1200),
-(3, 80);
+(3, 80)
+ON CONFLICT (product_id) DO NOTHING;

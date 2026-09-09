@@ -10,7 +10,7 @@
 |-----------------|-----------|-------|-------|-------------|
 | Identity        | MySQL 8.0 | 8.0   | 3307  | Data pengguna bersifat relasional dan memerlukan ACID penuh untuk keamanan autentikasi |
 | Catalog         | MySQL 8.0 | 8.0   | 3308  | Produk dan kategori memiliki relasi FK yang kuat; query JOIN intensif cocok untuk RDBMS |
-| Inventory       | MySQL 8.0 | 8.0   | 3309  | Mutasi stok memerlukan transaksi atomik untuk mencegah race condition (overselling) |
+| Inventory       | PostgreSQL | 15-alpine | 5433  | Mutasi stok memerlukan transaksi atomik, fitur FOR UPDATE SKIP LOCKED untuk anti race-condition/overselling |
 | Order           | MySQL 8.0 | 8.0   | 3310  | Order dan order_items memerlukan konsistensi ACID dan relasi FK yang ketat |
 
 ---

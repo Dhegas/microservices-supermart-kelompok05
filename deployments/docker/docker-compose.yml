@@ -4,109 +4,34 @@ version: "3.9"
 # SuperMart Monorepo – Database Orchestration
 # Kelompok 05
 # ============================================================
-# Menjalankan seluruh database per domain microservice:
-#   - identity  : MySQL  (port 3307)
-#   - catalog   : MySQL  (port 3308)
-#   - inventory : MySQL  (port 3309)
-#   - order     : MySQL  (port 3310)
-# ============================================================
 
 services:
 
   # ── Identity Service Database ──────────────────────────────
-  db-identity:
-    image: mysql:8.0
-    container_name: supermart-db-identity
-    restart: unless-stopped
+  identity-db:
+    image: postgres:15-alpine
+    container_name: supermart-identity-db
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: identity_db
-      MYSQL_USER: identity_user
-      MYSQL_PASSWORD: identity_secret
+      POSTGRES_DB: identity_service_db
+      POSTGRES_USER: identity_admin
+      POSTGRES_PASSWORD: identity_secret_pass
     ports:
-      - "3307:3306"
+      - "5431:5432" # PortHost:PortContainer
     volumes:
+      - identity_db_data:/var/lib/postgresql/data
       - ./init-scripts/identity:/docker-entrypoint-initdb.d:ro
-      - identity_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U identity_admin -d identity_service_db"]
+      interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 20s
-
-  # ── Catalog Service Database ───────────────────────────────
-  db-catalog:
-    image: mysql:8.0
-    container_name: supermart-db-catalog
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: catalog_db
-      MYSQL_USER: catalog_user
-      MYSQL_PASSWORD: catalog_secret
-    ports:
-      - "3308:3306"
-    volumes:
-      - ./init-scripts/catalog:/docker-entrypoint-initdb.d:ro
-      - catalog_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-
-  # ── Inventory Service Database ─────────────────────────────
-  db-inventory:
-    image: mysql:8.0
-    container_name: supermart-db-inventory
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: inventory_db
-      MYSQL_USER: inventory_user
-      MYSQL_PASSWORD: inventory_secret
-    ports:
-      - "3309:3306"
-    volumes:
-      - ./init-scripts/inventory:/docker-entrypoint-initdb.d:ro
-      - inventory_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-
-  # ── Order Service Database ─────────────────────────────────
-  db-order:
-    image: mysql:8.0
-    container_name: supermart-db-order
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: order_db
-      MYSQL_USER: order_user
-      MYSQL_PASSWORD: order_secret
-    ports:
-      - "3310:3306"
-    volumes:
-      - ./init-scripts/order:/docker-entrypoint-initdb.d:ro
-      - order_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
+      retries: 5
+    networks:
+      - supermart-network
 
 volumes:
-  identity_data:
-  catalog_data:
-  inventory_data:
-  order_data:
+  identity_db_data:
+
+networks:
+  supermart-network:
+    driver: bridge

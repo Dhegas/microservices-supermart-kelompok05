@@ -1,103 +1,116 @@
-# SuperMart Microservices – Kelompok 05
+# SuperMart Microservices – Identity Domain (Kelompok 05)
 
-> Monorepo proyek microservices SuperMart untuk mata kuliah Microservices, Semester 7.
+> Monorepo proyek *microservices* SuperMart untuk mata kuliah Microservices. Berkas ini berfokus pada petunjuk setup dan pengelolaan basis data untuk **Domain Identity Service**.
 
 ---
 
-## 📁 Struktur Monorepo
+## 📁 Struktur Monorepo (Identity Domain Focus)
 
 ```
 microservices-supermart-kelompok05/
 ├── deployments/
 │   └── docker/
-│       ├── docker-compose.yml          ← Orkestrasi seluruh database domain
-│       └── init-scripts/               ← Skrip DDL & seeding per domain
-│           ├── identity/
-│           │   └── 01-init.sql
-│           ├── catalog/
-│           │   └── 01-init.sql
-│           ├── inventory/
-│           │   └── 01-init.sql
-│           └── order/
-│               └── 01-init.sql
-├── services/                           ← Source code microservices (praktikum lanjutan)
-│   ├── identity-service/
-│   ├── catalog-service/
-│   ├── inventory-service/
-│   └── order-service/
+│       ├── docker-compose.yml          ← Orchestration database Identity Service (PostgreSQL 15)
+│       └── init-scripts/
+│           └── identity/
+│               └── 01-init.sql          ← Skrip DDL & DML inisialisasi basis data Identity
+├── services/
+│   └── identity-service/               ← Source code Identity Microservice
 ├── docs/
-│   └── architecture-decisions.md       ← Justifikasi pemilihan DBMS
-└── README.md
+│   └── architecture-decisions.md       ← Dokumentasi keputusan arsitektur (ADR)
+└── README.md                           ← Dokumentasi petunjuk instalasi & running
 ```
 
 ---
 
-## 🚀 Setup & Menjalankan Database
+## ⚙️ Petunjuk Instalasi & Menjalankan Kontainer
 
-### Prasyarat
+### Prasyarat System
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (v24+)
-- Git
+- [Git](https://git-scm.com/)
 
-### 1. Clone Repositori
+---
+
+### 1. Mengkloning Repositori
+
+Buka terminal / Command Prompt / PowerShell, lalu jalankan perintah:
 
 ```bash
 git clone https://github.com/Dhegas/microservices-supermart-kelompok05.git
 cd microservices-supermart-kelompok05
 ```
 
-### 2. Jalankan Seluruh Database
+---
+
+### 2. Informasi DBMS & Kredensial Basis Data (Identity Domain)
+
+Berikut adalah spesifikasi konfigurasi basis data untuk **Identity Service**:
+
+| Parameter | Spesifikasi / Kredensial |
+| :--- | :--- |
+| **Domain Service** | Identity Service |
+| **Teknologi DBMS** | PostgreSQL 15 (`postgres:15-alpine`) |
+| **Container Name** | `supermart-identity-db` |
+| **Host Port** | `5431` |
+| **Container Port** | `5432` |
+| **Database Name** | `identity_service_db` |
+| **Username** | `identity_admin` |
+| **Password** | `identity_secret_pass` |
+| **Docker Network** | `supermart-network` |
+| **Volume Data** | `identity_db_data` |
+
+---
+
+### 3. Perintah Menyalakan & Mematikan Lingkungan Kontainer
+
+#### 🟢 Menyalakan Kontainer Database Identity
+Navigasi ke direktori `deployments/docker` dan jalankan Docker Compose:
 
 ```bash
 cd deployments/docker
 docker compose up -d
 ```
 
-Perintah ini akan menjalankan 4 kontainer MySQL:
+> **Catatan**: Jika ingin menyalakan spesifik kontainer `identity-db` saja:
+> ```bash
+> docker compose up -d identity-db
+> ```
 
-| Container              | Database      | Port Host |
-|------------------------|---------------|-----------|
-| supermart-db-identity  | identity_db   | 3307      |
-| supermart-db-catalog   | catalog_db    | 3308      |
-| supermart-db-inventory | inventory_db  | 3309      |
-| supermart-db-order     | order_db      | 3310      |
-
-### 3. Verifikasi Status
-
+#### 🔍 Memeriksa Status Kontainer & Logs
 ```bash
+# Mengecek status kontainer yang berjalan
 docker compose ps
-docker compose logs -f
+
+# Melihat log aktivitas kontainer identity-db
+docker compose logs -f identity-db
 ```
 
-### 4. Menghentikan Database
-
+#### 🔴 Mematikan Kontainer Database
 ```bash
-docker compose down          # hentikan tanpa hapus volume
-docker compose down -v       # hentikan + hapus semua volume (reset data)
+# Menghentikan kontainer tanpa menghapus data volume
+docker compose down
+
+# Menghentikan kontainer sekaligus menghapus data volume (Reset Data)
+docker compose down -v
 ```
 
 ---
 
-## 🔗 Koneksi Database (Development)
+## 🔗 Koneksi Basis Data (GUI Tools)
 
-Gunakan tools seperti TablePlus / DBeaver / MySQL Workbench:
+Anda dapat terhubung ke database menggunakan client GUI seperti **TablePlus**, **DBeaver**, **pgAdmin**, atau **DataGrip**:
 
 ```
-Host     : localhost
-User     : <domain>_user   (contoh: identity_user)
-Password : <domain>_secret (contoh: identity_secret)
-Port     : lihat tabel di atas
+DBMS Driver : PostgreSQL
+Host        : localhost
+Port        : 5431
+Database    : identity_service_db
+User        : identity_admin
+Password    : identity_secret_pass
 ```
 
 ---
 
-## 📋 Anggota Kelompok 05
+## 📄 Dokumentasi Tambahan
 
-| Nama | NIM | Domain |
-|------|-----|--------|
-| (Isi sesuai anggota kelompok) | | |
-
----
-
-## 📄 Dokumentasi
-
-- [Architecture Decisions](docs/architecture-decisions.md) – Justifikasi pemilihan DBMS per domain
+- [Architecture Decisions (ADR)](docs/architecture-decisions.md) – Justifikasi pemilihan DBMS untuk Identity Service

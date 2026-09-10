@@ -1,112 +1,29 @@
 version: "3.9"
-
 # ============================================================
 # SuperMart Monorepo – Database Orchestration
-# Kelompok 05
+# Kelompok 05 – Domain Catalog
 # ============================================================
-# Menjalankan seluruh database per domain microservice:
-#   - identity  : MySQL 8.0     (port 3307)
-#   - catalog   : MySQL 8.0     (port 3308)
-#   - inventory : PostgreSQL 15 (port 5433)
-#   - order     : MySQL 8.0     (port 3310)
-# ============================================================
-
 services:
 
-  # ── Identity Service Database ──────────────────────────────
-  identity-db:
-    image: mysql:8.0
-    container_name: supermart-identity-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: identity_db
-      MYSQL_USER: identity_user
-      MYSQL_PASSWORD: identity_secret
-    ports:
-      - "3307:3306"
-    volumes:
-      - identity_db_data:/var/lib/mysql
-      - ./init-scripts/identity:/docker-entrypoint-initdb.d:ro
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-    networks:
-      - supermart-network
-
-  # ── Catalog Service Database ───────────────────────────────
+  # ── Catalog Service Database (MongoDB) ─────────────────────
   catalog-db:
-    image: mysql:8.0
+    image: mongo:6.0
     container_name: supermart-catalog-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: catalog_db
-      MYSQL_USER: catalog_user
-      MYSQL_PASSWORD: catalog_secret
+      MONGO_INITDB_ROOT_USERNAME: catalog_admin
+      MONGO_INITDB_ROOT_PASSWORD: catalog_secret_pass
+      MONGO_INITDB_DATABASE: catalog_service_db
     ports:
-      - "3308:3306"
+      - "27017:27017"
     volumes:
-      - catalog_db_data:/var/lib/mysql
-      - ./init-scripts/catalog:/docker-entrypoint-initdb.d:ro
-    command: --default-authentication-plugin=mysql_native_password
+      - catalog_db_data:/data/db
+      - ./init-scripts/catalog/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-    networks:
-      - supermart-network
-
-  # ── Inventory Service Database ─────────────────────────────
-  inventory-db:
-    image: postgres:15-alpine
-    container_name: supermart-inventory-db
-    restart: always
-    environment:
-      POSTGRES_DB: inventory_service_db
-      POSTGRES_USER: inventory_admin
-      POSTGRES_PASSWORD: inventory_secret_pass
-    ports:
-      - "5433:5432"
-    volumes:
-      - inventory_db_data:/var/lib/postgresql/data
-      - ./init-scripts/inventory:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U inventory_admin -d inventory_service_db"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - supermart-network
-
-  # ── Order Service Database ─────────────────────────────────
-  order-db:
-    image: mysql:8.0
-    container_name: supermart-order-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: order_db
-      MYSQL_USER: order_user
-      MYSQL_PASSWORD: order_secret
-    ports:
-      - "3310:3306"
-    volumes:
-      - order_db_data:/var/lib/mysql
-      - ./init-scripts/order:/docker-entrypoint-initdb.d:ro
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
     networks:
       - supermart-network
 
@@ -116,7 +33,4 @@ networks:
     name: supermart-isolated-net
 
 volumes:
-  identity_db_data:
   catalog_db_data:
-  inventory_db_data:
-  order_db_data:

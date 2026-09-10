@@ -1,25 +1,94 @@
-# 🏪 PT Nusantara SuperMart Indonesia — Monolith Seed Project
+# 🏪 PT Nusantara SuperMart Indonesia — Microservices Monorepo (Kelompok 05)
 
-> **Repositori Proyek Seed untuk Mata Kuliah / Pelatihan Arsitektur Microservices**  
-> Proyek *monolith* ritel dan rantai pasok (*supply chain*) *omnichannel* berskala enterprise siap pakai (full-stack: MySQL 8.0, Go Fiber v3, Angular 22). Dirancang khusus sebagai bahan ajar bagi mahasiswa untuk menganalisis batas-batas domain (*bounded contexts*) dan melakukan dekomposisi sistem menjadi arsitektur microservices.
+> **Repositori Proyek Microservices SuperMart — Kelompok 05**  
+> Proyek ritel dan rantai pasok (*supply chain*) *omnichannel* berskala enterprise untuk mata kuliah Microservices. Berkas ini berisi dokumentasi sistem, panduan dekomposisi monolitik, serta petunjuk setup database per domain layanan (*Database-per-Service*).
 
 ---
 
 ## 📋 Daftar Isi
 
-1. [Latar Belakang & Tujuan Pembelajaran](#-latar-belakang--tujuan-pembelajaran)
-2. [Arsitektur Sistem Eksisting (Monolitik)](#-arsitektur-sistem-eksisting-monolitik)
-3. [Arsitektur Relasional Basis Data (120 Tabel & 9 Kluster)](#-arsitektur-relasional-basis-data-120-tabel--9-kluster)
-4. [Diagram Alur & Relasi Antar-Entitas (ERD Flow)](#-diagram-alur--relasi-antar-entitas-erd-flow)
-5. [Fungsionalitas Lengkap Aplikasi per Peran Pengguna](#-fungsionalitas-lengkap-aplikasi-per-peran-pengguna)
-6. [Titik Kopling Monolitik (Target Dekomposisi Mahasiswa)](#-titik-kopling-monolitik-target-dekomposisi-mahasiswa)
-7. [Daftar Akun Demo & Kredensial Pengujian](#-daftar-akun-demo--kredensial-pengujian)
-8. [Panduan Menjalankan Aplikasi (How to Run)](#-panduan-menjalankan-aplikasi-how-to-run)
-   - [Opsi 1: Menjalankan Menggunakan Docker Compose (Rekomendasi)](#opsi-1-menjalankan-menggunakan-docker-compose-rekomendasi)
-   - [Opsi 2: Menjalankan Secara Manual (Bare-Metal Local Development)](#opsi-2-menjalankan-secara-manual-bare-metal-local-development)
-9. [Katalog Endpoint REST API Utama](#-katalog-endpoint-rest-api-utama)
-10. [Panduan Praktikum & Roadmap Tugas Mahasiswa](#-panduan-praktikum--roadmap-tugas-mahasiswa)
-11. [Troubleshooting & Solusi Masalah Umum](#-troubleshooting--solusi-masalah-umum)
+1. [Struktur Monorepo & Database per Domain](#-struktur-monorepo--database-per-domain)
+2. [Latar Belakang & Tujuan Pembelajaran](#-latar-belakang--tujuan-pembelajaran)
+3. [Arsitektur Sistem Eksisting (Monolitik)](#-arsitektur-sistem-eksisting-monolitik)
+4. [Arsitektur Relasional Basis Data (120 Tabel & 9 Kluster)](#-arsitektur-relasional-basis-data-120-tabel--9-kluster)
+5. [Diagram Alur & Relasi Antar-Entitas (ERD Flow)](#-diagram-alur--relasi-antar-entitas-erd-flow)
+6. [Fungsionalitas Lengkap Aplikasi per Peran Pengguna](#-fungsionalitas-lengkap-aplikasi-per-peran-pengguna)
+7. [Titik Kopling Monolitik (Target Dekomposisi Mahasiswa)](#-titik-kopling-monolitik-target-dekomposisi-mahasiswa)
+8. [Daftar Akun Demo & Kredensial Pengujian](#-daftar-akun-demo--kredensial-pengujian)
+9. [Panduan Menjalankan Lingkungan Database (Docker Compose)](#-panduan-menjalankan-lingkungan-database-docker-compose)
+10. [Panduan Menjalankan Aplikasi Monolith (Bare-Metal Local Development)](#-panduan-menjalankan-aplikasi-monolith-bare-metal-local-development)
+11. [Katalog Endpoint REST API Utama](#-katalog-endpoint-rest-api-utama)
+12. [Panduan Praktikum & Roadmap Tugas Mahasiswa](#-panduan-praktikum--roadmap-tugas-mahasiswa)
+13. [Troubleshooting & Solusi Masalah Umum](#-troubleshooting--solusi-masalah-umum)
+
+---
+
+## 📁 Struktur Monorepo & Database per Domain
+
+```
+microservices-supermart-kelompok05/
+├── deployments/
+│   └── docker/
+│       ├── docker-compose.yml          ← Orkestrasi database multi-service (Identity, Catalog, Inventory, Order)
+│       └── init-scripts/
+│           ├── identity/               ← Skrip DDL & DML Identity Service (PostgreSQL 15)
+│           ├── catalog/                ← Skrip inisialisasi & seed Catalog Service (MongoDB 6.0)
+│           ├── inventory/              ← Skrip DDL & DML Inventory Service
+│           └── order/                  ← Skrip DDL & DML Order Service
+├── services/                           ← Source code microservices
+│   ├── identity-service/
+│   ├── catalog-service/
+│   ├── inventory-service/
+│   └── order-service/
+├── docs/
+│   └── architecture-decisions.md       ← Dokumentasi keputusan arsitektur (ADR)
+└── README.md                           ← Dokumentasi petunjuk & setup
+```
+
+---
+
+## 🗄️ Spesifikasi Database per Layanan (Docker Compose)
+
+| Domain Service | Teknologi DBMS | Port Host | Port Container | Database Name | User / Auth |
+| :--- | :--- | :---: | :---: | :--- | :--- |
+| **Identity** | PostgreSQL 15 | `5431` | `5432` | `identity_service_db` | `identity_admin` / `identity_secret_pass` |
+| **Catalog** | MongoDB 6.0 | `27017` | `27017` | `catalog_service_db` | `catalog_admin` / `catalog_secret_pass` |
+| **Inventory** | PostgreSQL 16 | `5433` | `5432` | `inventory_db` | `inventory_user` / `inventory_secret` |
+| **Order** | PostgreSQL 16 | `5434` | `5432` | `order_db` | `order_user` / `order_secret` |
+
+---
+
+## 🚀 Panduan Menjalankan Lingkungan Database (Docker Compose)
+
+### Prasyarat
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (v24+)
+- [Git](https://git-scm.com/)
+
+### 1. Menjalankan Database
+
+Masuk ke direktori `deployments/docker`:
+```bash
+cd deployments/docker
+docker compose up -d
+```
+
+### 2. Memeriksa Status Kontainer & Logs
+```bash
+# Cek status seluruh kontainer
+docker compose ps
+
+# Cek logs kontainer tertentu (contoh: identity-db)
+docker compose logs -f identity-db
+```
+
+### 3. Menghentikan Kontainer Database
+```bash
+# Hentikan kontainer tanpa menghapus data
+docker compose down
+
+# Hentikan dan hapus volume persistent (reset data)
+docker compose down -v
+```
 
 ---
 
@@ -32,8 +101,6 @@ Proyek ini menghadirkan sistem monolitik ritel enterprise yang utuh dan berjalan
 - **Backend Monolitik (Go 1.26 + Fiber v3)**: Satu *binary* terpadu dengan 9 paket domain internal yang memiliki titik kopling (*in-process coupling*) sinkron yang sengaja disematkan untuk dipecah.
 - **Frontend SPA Terpadu (Angular 22)**: Antarmuka modern dengan *Signals*, *Standalone Components*, *Role-Based Routing*, dan portal interaktif untuk Pelanggan, Staf Gudang, Kurir, Agen CS, dan Super Admin.
 - **Infrastruktur Docker Compose**: Otomasi lingkungan pengembangan lokal berbasis kontainer.
-
-Mahasiswa ditugaskan untuk bertindak sebagai Software Architect / DevOps Engineer yang memodernisasi monolit ini menjadi arsitektur microservices berbasis *event-driven* atau *service mesh*.
 
 ---
 
@@ -94,8 +161,6 @@ Basis data `nusantara_db` dirancang dengan integritas relasional tinggi (*ACID C
 
 ## 📊 Diagram Alur & Relasi Antar-Entitas (ERD Flow)
 
-Berikut visualisasi relasi induk lintas kluster tabel dalam sistem monolitik:
-
 ```mermaid
 erDiagram
     users ||--o{ user_addresses : "memiliki alamat"
@@ -146,46 +211,42 @@ erDiagram
 
 ## 📱 Fungsionalitas Lengkap Aplikasi per Peran Pengguna
 
-Aplikasi frontend Angular 22 menyediakan antarmuka terpisah berbasis peran yang disesuaikan untuk setiap aktor bisnis:
-
 ### 1. 🛍️ Portal Pelanggan (Customer)
-- **Katalog & Navigasi**: Penelusuran produk retail dengan pencarian instan, filter kategori (Sembako, Minuman, Sayur Segar), filter merek, dan pengurutan harga/populer.
-- **Keranjang Belanja (Cart)**: Pengaturan kuantitas barang, penambahan catatan khusus per item, estimasi subtotal, dan validasi kode voucher diskon.
-- **Checkout Multi-Alamat & Hub Gudang**: Pemilihan alamat pengiriman terdaftar, pemilihan gudang pemenuhan terdekat (Jakarta Hub, Surabaya Hub, Denpasar Hub), dan pemilihan jenis kurir (Reguler, Next Day, Instan).
-- **Pesanan Saya (Order History)**: Daftar pesanan dengan *status badges* (Menunggu Pembayaran, Diproses, Dikirim, Selesai), drawer detail transaksi, nomor resi pengiriman, serta simulator pembayaran instan.
-- **Dompet Toko (Store Credit) & Poin Loyalitas**: Tampilan saldo dompet digital, riwayat transaksi kredit/debit, fitur top-up saldo, saldo poin reward, dan katalog penukaran poin.
-- **Pusat Bantuan & FAQ**: Pangkalan pengetahuan artikel mandiri, pengajuan tiket keluhan baru terhubung ke nomor pesanan, dan rekam jejak obrolan dua arah dengan agen customer service.
+- **Katalog & Navigasi**: Penelusuran produk retail dengan pencarian instan, filter kategori, filter merek, dan pengurutan harga/populer.
+- **Keranjang Belanja (Cart)**: Pengaturan kuantitas barang, penambahan catatan khusus per item, estimasi subtotal, dan validasi kode voucher.
+- **Checkout Multi-Alamat & Hub Gudang**: Pemilihan alamat pengiriman, pemilihan gudang pemenuhan (Jakarta, Surabaya, Denpasar Hub), dan jenis kurir.
+- **Pesanan Saya (Order History)**: Daftar pesanan dengan *status badges*, nomor resi pengiriman, serta simulator pembayaran instan.
+- **Dompet Toko & Poin Loyalitas**: Saldo dompet digital, riwayat transaksi kredit/debit, top-up saldo, dan penukaran poin reward.
+- **Pusat Bantuan & FAQ**: Pangkalan pengetahuan mandiri, pengajuan tiket keluhan terhubung ke pesanan, dan obrolan dengan CS.
 
 ### 2. 🏭 Portal Staf Gudang (Warehouse Staff)
-- **Manajemen Stok Regional**: Pemantauan inventaris fisik real-time pada setiap cabang gudang (Jakarta, Surabaya, Denpasar). Menampilkan kuantitas *On-Hand*, kuantitas *Reserved*, dan *Available*.
-- **Penyesuaian Stok (Stock Adjustment / Opname)**: Modal pembaruan saldo fisik aktual dan pencatatan alasan audit untuk mencegah selisih buku dan fisik.
-- **Peringatan Stok Menipis (Low Stock Alerts)**: Peringatan otomatis produk yang berada di bawah ambang batas minimum (*reorder threshold*).
-- **Mutasi Stok Antar-Gudang**: Formulir dan pencatatan riwayat transfer persediaan dari gudang asal ke gudang tujuan guna menyeimbangkan ketersediaan regional.
-- **Penerimaan Barang Masuk (Goods Receipt Note / GRN)**: Verifikasi penerimaan kiriman dari pemasok berdasarkan Purchase Order (PO) yang disetujui. Pencatatan GRN **secara otomatis meningkatkan stok gudang tujuan**.
+- **Manajemen Stok Regional**: Pemantauan inventaris fisik real-time pada setiap cabang gudang (Jakarta, Surabaya, Denpasar).
+- **Penyesuaian Stok (Opname)**: Pembaruan saldo fisik aktual dan pencatatan alasan audit.
+- **Peringatan Stok Menipis**: Peringatan otomatis produk di bawah ambang batas minimum (*reorder threshold*).
+- **Mutasi Stok Antar-Gudang**: Transfer persediaan antar-gudang untuk pemerataan stok regional.
+- **Penerimaan Barang Masuk (GRN)**: Verifikasi penerimaan kiriman dari pemasok berdasarkan Purchase Order (PO).
 
 ### 3. 🚚 Portal Kurir & Armada (Courier)
-- **Daftar Penugasan Pengiriman**: Antrean paket pengiriman pesanan (*shipping orders*) dengan nomor resi pelacakan, berat timbangan, dan informasi nama/alamat penerima.
-- **Pembaruan Status Pengiriman**: Aksi satu klik untuk mengubah status paket menjadi `PICKED_UP` (sudah dijemput dari gudang) dan `IN_TRANSIT` (sedang dalam perjalanan).
-- **Penyelesaian Bukti Pengiriman (Proof of Delivery / POD)**: Modal konfirmasi serah terima paket yang mencatat nama penerima fisik, foto dokumentasi serah terima, dan catatan kurir. **Penyelesaian POD secara otomatis menyelesaikan status pesanan pembeli menjadi `DELIVERED`**.
+- **Daftar Penugasan Pengiriman**: Antrean pengiriman dengan nomor resi, berat paket, dan alamat penerima.
+- **Pembaruan Status Pengiriman**: Mengubah status paket menjadi `PICKED_UP` dan `IN_TRANSIT`.
+- **Penyelesaian Bukti Pengiriman (POD)**: Konfirmasi serah terima paket yang mencatat nama penerima, foto dokumentasi, dan catatan kurir.
 
 ### 4. 🎧 Portal Agen Bantuan (Customer Service Agent)
-- **Antrean Tiket Terpadu**: Monitoring tiket keluhan pelanggan berdasarkan skala prioritas (`URGENT`, `HIGH`, `MEDIUM`, `LOW`) dan status (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`).
-- **Disposisi Penugasan (Assign to Me)**: Agen dapat mengambil alih tiket yang belum memiliki penanggung jawab.
-- **Thread Percakapan Interaktif**: Panel obrolan bergaya chat untuk memberikan tanggapan resmi kepada pembeli secara real-time.
-- **Resolusi Masalah**: Pengubahan status tiket menjadi selesai (*resolved*) setelah solusi disepakati.
+- **Antrean Tiket Terpadu**: Monitoring tiket keluhan pelanggan berdasarkan skala prioritas dan status.
+- **Disposisi Penugasan**: Klaim atau delegasi penugasan tiket bantuan.
+- **Thread Percakapan Interaktif**: Obrolan dua arah dengan pelanggan secara real-time.
+- **Resolusi Masalah**: Penyelesaian tiket komplain pelanggan.
 
 ### 5. ⚙️ Konsol Super Administrator (Super Admin)
-- **Dashboard Eksekutif**: Ringkasan indikator kinerja utama (Total Transaksi Penjualan, Pendapatan Kotor, Item Kritis, Tiket Terbuka) dan panduan praktikum dekomposisi sistem monolitik.
-- **Manajemen Pengguna & Otorisasi**: Daftar akun terdaftar, status keaktifan, dan pembagian peran hak akses (RBAC).
-- **Verifikasi Identitas Legal (KYC Approval)**: Antrean verifikasi dokumen identitas resmi (KTP/NIK) pelanggan dengan tombol Persetujuan (*Approve*) atau Penolakan (*Reject*).
-- **Master Katalog Produk**: Pengelolaan SKU produk baru, penetapan harga dasar, penugasan kategori dan merek, bobot satuan, serta status publikasi tayang.
-- **Promosi & Voucher**: Pembuatan kode voucher belanja baru (potongan nominal, batas kuota pemakaian, tanggal kedaluwarsa) serta kampanye pemasaran musiman.
+- **Dashboard Eksekutif**: Ringkasan indikator kinerja utama (Total Transaksi, Pendapatan Kotor, Item Kritis, Tiket Terbuka).
+- **Manajemen Pengguna & Otorisasi**: Kelola akun terdaftar, status keaktifan, dan pembagian peran hak akses (RBAC).
+- **Verifikasi Identitas Legal (KYC Approval)**: Verifikasi dokumen identitas resmi (KTP/NIK) pelanggan.
+- **Master Katalog Produk**: Pengelolaan SKU produk baru, penetapan harga dasar, kategori, dan merek.
+- **Promosi & Voucher**: Pembuatan kode voucher belanja baru dan kampanye pemasaran.
 
 ---
 
 ## 🔗 Titik Kopling Monolitik (Target Dekomposisi Mahasiswa)
-
-Untuk memberikan studi kasus nyata dekomposisi microservices, backend monolitik ini sengaja mengimplementasikan **ketergantungan langsung dalam memori (*in-process coupling*)** antar-paket domain:
 
 ```
 [ Checkout / Order Service ]
@@ -207,110 +268,30 @@ Untuk memberikan studi kasus nyata dekomposisi microservices, backend monolitik 
        └──(Kopling 5: Penerimaan GRN langsung mutasi stok)──► UPDATE inventory_stocks SET quantity_on_hand += ...
 ```
 
-### 🎯 Rincian Kopling yang Harus Dipecah Mahasiswa:
-1. **Order Service $\rightarrow$ Catalog & Inventory**:
-   - *Kondisi Eksisting*: Saat fungsi `order.Service.CreateOrder` dipanggil, ia secara sinkron mengecek ketersediaan produk ke `catalog.Service` dan mengunci kuantitas stok di `inventory.Service`.
-   - *Tugas Refaktor*: Pisahkan menjadi komunikasi asinkron berbasis *Message Broker* (Kafka/RabbitMQ) atau implementasikan pola **Saga Pattern** (*Orchestration/Choreography*) dengan kompensasi pembatalan reservasi jika pesanan kedaluwarsa.
-2. **Payment Service $\rightarrow$ Order Service**:
-   - *Kondisi Eksisting*: Saat faktur dilunasi (`payment.Service.PayInvoice`), service pembayaran memanggil langsung `order.Service.UpdateStatus(orderID, "PAID")`.
-   - *Tugas Refaktor*: Publikasikan domain event `PaymentCompletedEvent` ke message bus, di mana Order Service bertindak sebagai subscriber independen.
-3. **Logistics Service $\rightarrow$ Order Service**:
-   - *Kondisi Eksisting*: Saat kurir menuntaskan POD (`logistics.Service.SubmitPOD`), status pesanan langsung diubah menjadi `DELIVERED` lewat pemanggilan fungsi lokal.
-   - *Tugas Refaktor*: Ganti dengan *Domain Event* `ShipmentDeliveredEvent` atau pemanggilan RPC (*gRPC* antar-layanan) dengan mekanisme *retry* dan *circuit breaker*.
-4. **Procurement Service $\rightarrow$ Inventory Database**:
-   - *Kondisi Eksisting*: Transaksi pencatatan GRN di `procurement.Service` secara langsung mengeksekusi query SQL pembaruan stok ke tabel `inventory_stocks`.
-   - *Tugas Refaktor*: Pisahkan basis data pengadaan (`procurement_db`) dan inventaris (`inventory_db`), lalu gunakan API/Event `StockReplenishedEvent` untuk memperbarui stok.
-
 ---
 
 ## 👥 Daftar Akun Demo & Kredensial Pengujian
 
-Semua akun pra-konfigurasi dalam `seed.sql` menggunakan kata sandi yang sama: **`password123`**
+Semua akun pra-konfigurasi dalam `seed.sql` menggunakan kata sandi: **`password123`**
 
-| Peran (Role) | Alamat Email | Kata Sandi | Portal Akses & Alur Uji Coba |
+| Peran (Role) | Alamat Email | Kata Sandi | Portal Akses |
 |---|---|---|---|
-| **Super Admin** | `admin@nusantara-supermart.co.id` | `password123` | Dashboard Admin, Verifikasi KYC, Kelola Pengguna, Katalog, Voucher Promosi. |
-| **Staf Gudang Jakarta** | `budi.gudang@nusantara-supermart.co.id` | `password123` | Pantau Stok Jakarta Hub, Lakukan Penyesuaian Stok, Mutasi Barang, Terima GRN. |
-| **Staf Gudang Surabaya** | `eko.gudang@nusantara-supermart.co.id` | `password123` | Pantau Stok Surabaya Hub, Mutasi Barang ke Jakarta/Bali, Terima Pasokan GRN. |
-| **Kurir Jakarta** | `kurir.jkt@nusantara-supermart.co.id` | `password123` | Antrean Kiriman Jakarta, Ubah ke In-Transit, Konfirmasi POD dengan Foto. |
-| **Kurir Surabaya** | `kurir.sby@nusantara-supermart.co.id` | `password123` | Antrean Kiriman Surabaya, Ubah ke In-Transit, Konfirmasi POD dengan Foto. |
-| **Agen CS** | `siti.cs@nusantara-supermart.co.id` | `password123` | Antrean Tiket Bantuan, Ambil Tiket (*Assign*), Kirim Balasan Pesan ke Pelanggan. |
-| **Pelanggan (Siti)** | `siti.aminah@gmail.com` | `password123` | Belanja Katalog, Masukkan Keranjang, Checkout Alamat, Bayar Tagihan, Dompet. |
-| **Pelanggan (Budi)** | `budi.santoso@yahoo.com` | `password123` | Belanja Katalog, Masukkan Voucher Promo, Buat Pesanan, Ajukan Tiket Bantuan CS. |
-
-> 💡 **Fitur Praktis**: Halaman login (`/auth/login`) dilengkapi tombol **1-Click Test Login** untuk setiap akun di atas sehingga Anda tidak perlu mengetikkan email dan password berulang kali.
+| **Super Admin** | `admin@nusantara-supermart.co.id` | `password123` | Dashboard Admin, Verifikasi KYC, Kelola Pengguna, Katalog, Promo |
+| **Staf Gudang Jakarta** | `budi.gudang@nusantara-supermart.co.id` | `password123` | Stok Jakarta Hub, Opname, Mutasi, Terima GRN |
+| **Staf Gudang Surabaya** | `eko.gudang@nusantara-supermart.co.id` | `password123` | Stok Surabaya Hub, Mutasi, Terima GRN |
+| **Kurir Jakarta** | `kurir.jkt@nusantara-supermart.co.id` | `password123` | Antrean Kiriman Jakarta, In-Transit, Bukti POD |
+| **Kurir Surabaya** | `kurir.sby@nusantara-supermart.co.id` | `password123` | Antrean Kiriman Surabaya, In-Transit, Bukti POD |
+| **Agen CS** | `siti.cs@nusantara-supermart.co.id` | `password123` | Antrean Tiket Bantuan, Chat Pelanggan |
+| **Pelanggan (Siti)** | `siti.aminah@gmail.com` | `password123` | Belanja Katalog, Keranjang, Checkout, Bayar, Dompet |
+| **Pelanggan (Budi)** | `budi.santoso@yahoo.com` | `password123` | Belanja Katalog, Voucher Promo, Pesanan, Tiket Bantuan |
 
 ---
 
-## 🚀 Panduan Menjalankan Aplikasi (How to Run)
+## 💻 Panduan Menjalankan Aplikasi Monolith (Bare-Metal Local Development)
 
-Anda dapat menjalankan aplikasi ini menggunakan dua cara: **Docker Compose** (paling mudah dan disarankan) atau **Manual Bare-Metal**.
+Gunakan metode ini jika Anda ingin menjalankan backend Go dan frontend Angular bawaan seed project.
 
-### Opsi 1: Menjalankan Menggunakan Docker Compose (Rekomendasi)
-
-Pastikan Docker Desktop / Docker Engine telah terpasang dan berjalan di komputer Anda.
-
-#### 1. Salin File Konfigurasi Lingkungan
-Buka terminal pada direktori utama proyek:
-```bash
-cp .env.example .env
-```
-
-#### 2. Jalankan Seluruh Kontainer
-```bash
-docker compose up --build
-```
-Perintah ini akan secara otomatis:
-1. Menyalakan kontainer basis data `mysql:8.0` pada port `3306`.
-2. Menjalankan migrasi skema `db.sql` (120 tabel) dan data awal `seed.sql`.
-3. Mengompilasi dan menjalankan kontainer backend Go Fiber pada port `3000`.
-4. Mengompilasi kode Angular 22 dan menyajikan aplikasi melalui web server Nginx pada port `4200` (dengan reverse proxy `/api` otomatis ke backend).
-
-#### 3. Akses Aplikasi di Browser
-- **Frontend SPA**: [http://localhost:4200](http://localhost:4200)
-- **Backend Healthcheck API**: [http://localhost:3000/api/v1/health](http://localhost:3000/api/v1/health)
-- **MySQL Database**: `localhost:3306` (User: `nusantara_user`, Password: `nusantara_secret`, Database: `nusantara_db`)
-
-Untuk menghentikan kontainer:
-```bash
-docker compose down
-# atau jika ingin menghapus volume database untuk reset bersih:
-docker compose down -v
-```
-
----
-
-### Opsi 2: Menjalankan Secara Manual (Bare-Metal Local Development)
-
-Gunakan metode ini jika Anda ingin melakukan *debugging* aktif pada kode Go atau Angular.
-
-#### Prasyarat Lingkungan:
-- **Go**: Versi 1.24 atau lebih baru (direkomendasikan Go 1.26).
-- **Node.js**: Versi 20.x atau 22.x LTS dengan npm.
-- **MySQL Server**: Versi 8.0 (lokal atau via kontainer tunggal).
-
----
-
-#### Langkah A: Persiapan Basis Data MySQL
-
-Jika Anda memiliki MySQL lokal yang sedang berjalan:
-```bash
-# 1. Masuk ke MySQL client sebagai root
-mysql -u root -p
-
-# 2. Buat database dan berikan hak akses pengguna
-CREATE DATABASE nusantara_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'nusantara_user'@'%' IDENTIFIED BY 'nusantara_secret';
-GRANT ALL PRIVILEGES ON nusantara_db.* TO 'nusantara_user'@'%';
-FLUSH PRIVILEGES;
-EXIT;
-
-# 3. Impor skema 120 tabel dan data seed
-mysql -u nusantara_user -pnusantara_secret nusantara_db < db.sql
-mysql -u nusantara_user -pnusantara_secret nusantara_db < seed.sql
-```
-
-*Alternatif Praktis Menggunakan Docker MySQL:*
+### 1. Persiapan Basis Data MySQL Bawaan Seed
 ```bash
 docker run -d --name mysql-supermart -p 3306:3306 \
   -e MYSQL_ROOT_PASSWORD=root_secret \
@@ -319,185 +300,61 @@ docker run -d --name mysql-supermart -p 3306:3306 \
   -e MYSQL_PASSWORD=nusantara_secret \
   mysql:8.0 --default-authentication-plugin=mysql_native_password
 
-# Tunggu hingga MySQL siap, lalu jalankan script inisialisasi:
+# Tunggu hingga MySQL siap, lalu inisialisasi:
 ./scripts/init-db.sh
 ```
 
----
+### 2. Menjalankan Backend (Go Monolith)
+```bash
+cd backend
+cp ../.env.example .env
+go mod tidy
+go run main.go
+```
+*Backend berjalan di: `http://localhost:3000`*
 
-#### Langkah B: Menjalankan Backend (Go Monolith)
-
-1. Masuk ke folder backend:
-   ```bash
-   cd backend
-   ```
-2. Salin konfigurasi environment lokal:
-   ```bash
-   cp ../.env.example .env
-   ```
-   *Pastikan nilai `MYSQL_HOST=localhost` di file `.env` jika backend dijalankan di luar docker.*
-3. Unduh dependensi dan kompilasi:
-   ```bash
-   go mod tidy
-   go build -v .
-   ```
-4. Jalankan server backend:
-   ```bash
-   go run main.go
-   ```
-   Backend akan menyala dan mendengarkan permintaan di `http://localhost:3000`.
-
----
-
-#### Langkah C: Menjalankan Frontend (Angular 22 SPA)
-
-1. Buka jendela terminal baru dan masuk ke folder frontend:
-   ```bash
-   cd frontend
-   ```
-2. Pasang dependensi Node:
-   ```bash
-   npm install
-   ```
-3. Jalankan server pengembangan Angular:
-   ```bash
-   npm start
-   ```
-   Aplikasi frontend akan terbuka dan dapat diakses melalui browser pada tautan: [http://localhost:4200](http://localhost:4200).
+### 3. Menjalankan Frontend (Angular 22 SPA)
+```bash
+cd frontend
+npm install
+npm start
+```
+*Frontend dapat diakses di: `http://localhost:4200`*
 
 ---
 
 ## 📡 Katalog Endpoint REST API Utama
 
 Backend menyajikan endpoint RESTful terstandarisasi di bawah rute `/api/v1`:
-
-### 1. Autentikasi & Akun (`/api/v1/auth`)
-- `POST /auth/login` — Autentikasi pengguna & penerbitan token JWT.
-- `POST /auth/register` — Pendaftaran akun pelanggan baru.
-- `GET  /auth/me` — Profil pengguna yang sedang masuk (*Bearer Token*).
-- `PUT  /auth/me` — Pembaruan biodata profil pengguna.
-- `GET  /auth/addresses` — Buku alamat pengiriman pengguna.
-- `POST /auth/addresses` — Penambahan alamat tujuan pengiriman baru.
-- `GET  /auth/users` — *(Super Admin)* Daftar seluruh pengguna sistem.
-- `GET  /auth/kyc` — *(Super Admin)* Antrean berkas verifikasi identitas legal KYC.
-- `PUT  /auth/kyc/:id/verify` — *(Super Admin)* Persetujuan/penolakan status KYC.
-
-### 2. Katalog Produk (`/api/v1/catalog`)
-- `GET    /catalog/products` — Daftar katalog produk (mendukung query parameter `search`, `category_id`, `min_price`, `limit`).
-- `GET    /catalog/products/:id` — Informasi detail produk berdasarkan ID.
-- `GET    /catalog/categories` — Master kategori barang.
-- `GET    /catalog/brands` — Master merek dagang.
-- `POST   /catalog/products` — *(Super Admin)* Pembuatan SKU barang baru.
-- `DELETE /catalog/products/:id` — *(Super Admin)* Penghapusan produk dari katalog.
-
-### 3. Inventaris & Gudang (`/api/v1/inventory`)
-- `GET /inventory/warehouses` — Daftar fasilitas gudang regional.
-- `GET /inventory/stocks` — *(Staff/Admin)* Saldo stok per produk dan gudang.
-- `PUT /inventory/stocks/:id/adjust` — *(Staff/Admin)* Penyesuaian fisik stok aktual.
-- `GET /inventory/alerts` — *(Staff/Admin)* Daftar peringatan stok menipis (*low stock*).
-- `GET /inventory/mutations` — *(Staff/Admin)* Riwayat pemindahan stok antar-gudang.
-- `POST /inventory/mutations` — *(Staff/Admin)* Eksekusi transfer mutasi stok baru.
-
-### 4. Transaksi & Keranjang (`/api/v1/order`)
-- `GET    /order/cart` — Mengambil isi keranjang belanja pelanggan aktif.
-- `POST   /order/cart/items` — Menambahkan barang ke dalam keranjang.
-- `DELETE /order/cart/items/:id` — Menghapus item dari keranjang.
-- `POST   /order/checkout` — Checkout keranjang menjadi pesanan (*Order*) resmi.
-- `GET    /order/orders` — Daftar riwayat pesanan pelanggan.
-- `GET    /order/orders/:id` — Rincian faktur dan barang dalam pesanan.
-- `PUT    /order/orders/:id/cancel` — Pembatalan pesanan yang belum terbayar.
-
-### 5. Pembayaran & Dompet (`/api/v1/payment`)
-- `GET  /payment/invoices/:id` — Rincian tagihan faktur pesanan.
-- `POST /payment/invoices/:id/pay` — Simulasi pelunasan tagihan (Metode: Dompet Toko, Virtual Account BCA/Mandiri, QRIS Dinamis).
-- `GET  /payment/wallet` — Informasi saldo dompet toko (*store credit*) dan transaksi mutasi.
-- `POST /payment/wallet/topup` — Penambahan saldo dompet pelanggan.
-
-### 6. Promosi & Loyalitas (`/api/v1/promotions`)
-- `GET  /promotions/vouchers` — Daftar kode voucher belanja yang tersedia.
-- `POST /promotions/vouchers/validate` — Validasi kelayakan kode voucher saat checkout.
-- `POST /promotions/vouchers` — *(Super Admin)* Penerbitan kode voucher baru.
-- `GET  /promotions/loyalty` — Saldo poin loyalitas keanggotaan pengguna.
-- `POST /promotions/loyalty/redeem` — Penukaran poin loyalitas menjadi reward.
-
-### 7. Logistik & Kurir (`/api/v1/logistics`)
-- `GET  /logistics/shipments` — *(Kurir/Admin)* Antrean paket pengiriman pesanan.
-- `PUT  /logistics/shipments/:id/status` — *(Kurir/Admin)* Pembaruan status paket (`PICKED_UP`, `IN_TRANSIT`).
-- `POST /logistics/shipments/:id/pod` — *(Kurir/Admin)* Unggah bukti serah terima (Proof of Delivery / POD).
-
-### 8. Pengadaan & Pemasok (`/api/v1/procurement`)
-- `GET  /procurement/purchase-orders` — *(Staff/Admin)* Daftar Purchase Order (PO).
-- `POST /procurement/purchase-orders/:id/approve` — *(Staff/Admin)* Persetujuan PO.
-- `GET  /procurement/grn` — *(Staff/Admin)* Daftar Berita Acara Penerimaan Barang (GRN).
-- `POST /procurement/grn` — *(Staff/Admin)* Pencatatan GRN (otomatis menambah stok on-hand).
-
-### 9. Layanan Pelanggan (`/api/v1/support`)
-- `GET  /support/faq` — Artikel panduan bantuan publik.
-- `GET  /support/tickets` — Daftar tiket bantuan (milik pelanggan atau antrean CS).
-- `POST /support/tickets` — Pembukaan tiket bantuan baru oleh pelanggan.
-- `GET  /support/tickets/:id` — Detail tiket dan thread riwayat pesan.
-- `POST /support/tickets/:id/messages` — Pengiriman pesan balasan di dalam tiket.
-- `PUT  /support/tickets/:id/assign` — *(CS Agent)* Klaim penugasan tiket bantuan.
-- `PUT  /support/tickets/:id/status` — *(CS Agent)* Pembaruan status penanganan tiket.
+- **`/api/v1/auth`**: Login, register, me, addresses, users, KYC verification.
+- **`/api/v1/catalog`**: Products list/detail, categories, brands, admin product management.
+- **`/api/v1/inventory`**: Warehouses, stocks, stock adjustments, low-stock alerts, mutations.
+- **`/api/v1/order`**: Cart, cart items, checkout, order history & detail, cancel order.
+- **`/api/v1/payment`**: Invoices, invoice payment, wallet balance, top-up.
+- **`/api/v1/promotions`**: Vouchers, voucher validation, loyalty points, point redemption.
+- **`/api/v1/logistics`**: Shipments, shipment status update, proof of delivery (POD).
+- **`/api/v1/procurement`**: Purchase orders (PO), PO approval, goods receipt notes (GRN).
+- **`/api/v1/support`**: FAQ, support tickets, ticket messages, ticket assignment & status.
 
 ---
 
 ## 🗺️ Panduan Praktikum & Roadmap Tugas Mahasiswa
 
-Proyek ini dirancang untuk diselesaikan dalam 4 tahapan *milestone* praktikum mata kuliah:
-
-### 🎯 Milestone 1: Domain-Driven Design (DDD) & Pemisahan Bounded Context
-- Analisis ke-120 tabel basis data dan klasifikasikan ke dalam *Core Domains*, *Supporting Domains*, dan *Generic Domains*.
-- Buat peta konteks (*Context Map*) yang mengidentifikasi relasi antar-domain (*Upstream-Downstream*, *Customer-Supplier*, *Shared Kernel*).
-- Identifikasi titik kopling sinkron yang terdapat pada kode `backend/internal/`.
-
-### 🎯 Milestone 2: Ekstraksi Layanan Microservice Pertama (Auth & Catalog Service)
-- Pisahkan paket `internal/auth` dan `internal/catalog` menjadi dua repositori/proses mandiri.
-- Pisahkan skema tabelnya dari `nusantara_db` menjadi basis data terisolasi: `auth_db` dan `catalog_db` (*Database-per-Service*).
-- Terapkan otentikasi stateless menggunakan verifikasi JWT terdistribusi atau integrasikan **API Gateway** (seperti Kong, Traefik, atau Ocelot).
-
-### 🎯 Milestone 3: Komunikasi Asinkron & Saga Pattern pada Alur Transaksi
-- Pasang *Message Broker* (Apache Kafka atau RabbitMQ).
-- Refaktor proses checkout: alih-alih memanggil `inventory.Service` secara sinkron, publikasikan event `OrderCreatedEvent`.
-- Implementasikan pola **SAGA Choreography / Orchestration**:
-  - `OrderCreated` $\rightarrow$ `ReserveInventory` $\rightarrow$ `InventoryReserved` $\rightarrow$ `ProcessPayment`.
-  - Jika pembayaran gagal/kedaluwarsa, kirim event kompensasi `ReleaseInventoryReservation`.
-
-### 🎯 Milestone 4: Kontainerisasi, Observabilitas, & Service Mesh
-- Buat konfigurasi *Kubernetes Manifests* / *Helm Charts* untuk seluruh layanan yang telah didekomposisi.
-- Konfigurasikan *Distributed Tracing* menggunakan OpenTelemetry dan Jaeger untuk melacak jejak latensi antar-microservice.
-- Terapkan *Health Check Probes* (`livenessProbe`, `readinessProbe`) dan *Rate Limiting*.
+- **🎯 Milestone 1**: Domain-Driven Design (DDD) & Pemisahan Bounded Context.
+- **🎯 Milestone 2**: Ekstraksi Layanan Microservice Pertama (*Database-per-Service*).
+- **🎯 Milestone 3**: Komunikasi Asinkron & Saga Pattern pada Alur Transaksi.
+- **🎯 Milestone 4**: Kontainerisasi, Observabilitas, & Service Mesh.
 
 ---
 
 ## 🔧 Troubleshooting & Solusi Masalah Umum
 
-### 1. Masalah: Port 3306 atau Port 3000 Bentrok (*Address already in use*)
-- **Penyebab**: Terdapat instance MySQL lokal atau proses Go lain yang sedang berjalan dan menggunakan port tersebut.
-- **Solusi**:
-  - Matikan MySQL lokal: `sudo service mysql stop` (Linux) atau `brew services stop mysql` (macOS).
-  - Atau ubah pemetaan port pada `docker-compose.yml`, misalnya: `"3307:3306"` untuk MySQL.
-
-### 2. Masalah: Autentikasi MySQL Gagal (*Authentication plugin 'caching_sha2_password'*)
-- **Solusi**: Pastikan instance MySQL menggunakan plugin native:
-  ```sql
-  ALTER USER 'nusantara_user'@'%' IDENTIFIED WITH mysql_native_password BY 'nusantara_secret';
-  FLUSH PRIVILEGES;
-  ```
-
-### 3. Masalah: CORS Error di Browser saat Frontend Memanggil Backend
-- **Penyebab**: Konfigurasi header CORS backend belum mencakup origin frontend Anda.
-- **Solusi**: Pastikan environment variable `CORS_ORIGINS` di backend mencakup origin `http://localhost:4200` dan `http://127.0.0.1:4200`.
-
-### 4. Masalah: Inisialisasi Database Docker Tidak Menjalankan `seed.sql`
-- **Penyebab**: Volume `mysql_data` lama masih menyimpan status instalasi sebelumnya.
-- **Solusi**: Hapus volume lama dengan perintah:
-  ```bash
-  docker compose down -v
-  docker compose up --build
-  ```
+1. **Port Bentrok (*Address already in use*)**: Pastikan tidak ada service lokal lain yang menggunakan port 5431, 27017, 3306, atau 3000.
+2. **Koneksi Database Gagal**: Periksa status kontainer dengan `docker compose ps` dan pastikan kredensial pada `.env` sudah sesuai tabel database per domain.
+3. **Reset Data Bersih**: Jalankan `docker compose down -v` lalu `docker compose up -d` untuk memuat ulang skrip DDL/DML dari awal.
 
 ---
 
-## 📄 Lisensi
-Lisensi Penggunaan Bahan Ajar Terbatas — PT Nusantara SuperMart Indonesia Course Materials. Dibuat untuk keperluan simulasi pendidikan rekayasa perangkat lunak dan arsitektur microservices.
+## 📄 Dokumentasi Tambahan
+
+- [Architecture Decisions Record (ADR)](docs/architecture-decisions.md) – Keputusan pemilihan DBMS dan arsitektur Polyglot Persistence.

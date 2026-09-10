@@ -4,48 +4,51 @@
 
 ---
 
-## ADR-001: Pemilihan DBMS per Domain
+## ADR-001: Pemilihan DBMS per Domain (Polyglot Persistence)
 
-| Domain          | DBMS      | Versi | Port  | Justifikasi |
-|-----------------|-----------|-------|-------|-------------|
-| Identity        | MySQL 8.0 | 8.0   | 3307  | Data pengguna bersifat relasional dan memerlukan ACID penuh untuk keamanan autentikasi |
-| Catalog         | MySQL 8.0 | 8.0   | 3308  | Produk dan kategori memiliki relasi FK yang kuat; query JOIN intensif cocok untuk RDBMS |
-| Inventory       | MySQL 8.0 | 8.0   | 3309  | Mutasi stok memerlukan transaksi atomik untuk mencegah race condition (overselling) |
-| Order           | MySQL 8.0 | 8.0   | 3310  | Order dan order_items memerlukan konsistensi ACID dan relasi FK yang ketat |
+| Domain    | DBMS          | Versi | Port Host | Justifikasi |
+|-----------|---------------|-------|-----------|-------------|
+| Identity  | PostgreSQL    | 16    | 5431      | Data pengguna bersifat relasional dan memerlukan ACID penuh untuk keamanan autentikasi & otorisasi. |
+| Catalog   | MongoDB       | 6.0   | 27017     | Karakteristik data produk dan kategori e-commerce bersifat fleksibel (*schemaless* document), mendukung atribut dinamis, dan dioptimalkan untuk query baca (*read-heavy*). |
+| Inventory | PostgreSQL    | 16    | 5433      | Mutasi stok barang memerlukan transaksi atomik (ACID) untuk mencegah kondisi *race condition* atau *overselling*. |
+| Order     | PostgreSQL    | 16    | 5434      | Order dan order items memerlukan konsistensi transaksi kuat, integritas data keuangan, dan audit trail yang presisi. |
 
 ---
 
-## ADR-002: Pola Database-per-Service
+## ADR-002: Pola Database-per-Service & Polyglot Persistence
 
 ### Konteks
-Setiap microservice memiliki database independen untuk mencapai *loose coupling* antar domain.
+Setiap microservice memiliki basis data independen untuk mencapai *loose coupling* dan otonomi penuh antar domain layanan.
 
 ### Keputusan
-Menggunakan pola **Database-per-Service**: setiap service hanya dapat mengakses database miliknya sendiri. Referensi lintas domain dilakukan melalui **Logical Foreign Key** (ID disimpan, tanpa FK constraint di level database).
+1. Menggunakan pola **Database-per-Service**: setiap service hanya memiliki hak akses langsung ke database miliknya sendiri.
+2. Menggunakan prinsip **Polyglot Persistence**: memilih tipe database (Relasional SQL vs Dokumen NoSQL) yang paling cocok dengan model data dan pola akses spesifik domainnya.
+3. Referensi lintas domain dilakukan menggunakan **Logical Foreign Key** (menyimpan ID dari service lain tanpa foreign key constraint di level database fisik).
 
 ### Konsekuensi
-- ✅ Setiap service dapat di-scale dan di-deploy secara independen
-- ✅ Perubahan skema satu domain tidak berdampak ke domain lain
-- ⚠️  Join lintas domain harus dilakukan di application layer (API Composition atau CQRS)
+- ✅ Skalabilitas dan performa masing-masing domain dapat dioptimalkan secara independen.
+- ✅ Perubahan skema pada satu service (misal menambah atribut produk di MongoDB) tidak mempengaruhi service lain.
+- ⚠️ Join data lintas domain harus dilakukan melalui komunikasi antar service (API Composition / Event-driven).
 
 ---
 
-## ADR-003: Orkestrasi Container
+## ADR-003: Orkestrasi Container & Network Isolation
 
 ### Keputusan
-Menggunakan **Docker Compose v3.9** untuk orkestrasi database lokal selama fase development.
+Menggunakan **Docker Compose v3.9** dengan custom bridge network `supermart-isolated-net` (`supermart-network`).
 
 ### Alasan
-- Mudah di-reproduce di semua mesin anggota tim
-- Health check bawaan untuk memastikan database siap sebelum service terhubung
-- Volume terpisah per database untuk isolasi data
+- Mengisolasi jaringan antar container database agar berada dalam satu subnet terkelola.
+- Menggunakan persistent named volumes terpisah (`catalog_db_data`, `identity_db_data`, dll.) untuk mencegah kehilangan data saat container di-restart.
+- Healthcheck otomatis untuk memastikan container siap menerima koneksi aplikasi.
 
 ---
 
 ## ADR-004: Strategi Inisialisasi Database
 
-Setiap database diinisialisasi melalui skrip SQL di folder `init-scripts/<domain>/` yang dipasang sebagai volume ke `/docker-entrypoint-initdb.d/` MySQL. Urutan eksekusi dikontrol oleh prefix numerik (01-, 02-, dst.).
+- **MongoDB (Catalog)**: Diinisialisasi melalui skrip JavaScript `init-mongo.js` yang dimounting ke `/docker-entrypoint-initdb.d/init-mongo.js` untuk membuat koleksi `categories` & `products`, mengonfigurasi indeks unik, dan memasukkan data seed awal.
+- **PostgreSQL**: Diinisialisasi melalui skrip SQL DDL & Seed di folder `init-scripts/<domain>/`.
 
 ---
 
-*Dokumen ini akan diperbarui seiring perkembangan praktikum.*
+*Dokumen ini akan terus diperbarui seiring perkembangan praktikum.*
